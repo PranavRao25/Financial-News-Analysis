@@ -9,15 +9,20 @@ parent = Path(__file__).resolve().parent.parent
 
 def tokenize(dataset_path : Path, model_id : str, length : int):
     def tokenize_function(examples):
-        return tokenizer(
+        tokenized_inputs =  tokenizer(
             examples["text"], 
             truncation=True, 
             max_length=length
         )
+        tokenized_inputs["labels"] = [label2id[label] for label in examples["label"]]
+        return tokenized_inputs
     
+    label2id = {"negative": 0, "neutral": 1, "positive": 2}
     tokenizer = AutoTokenizer.from_pretrained(model_id)
     dataset = load_dataset("csv", data_files=str(dataset_path))["train"] # type: ignore
-    tokenized_dataset = dataset.map(tokenize_function, batched=True)
+    tokenized_dataset = dataset.map(tokenize_function,
+                                             batched=True,
+                                             remove_columns=["label", "text"])
     return tokenized_dataset
 
 if __name__ == "__main__":

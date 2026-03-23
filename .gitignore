@@ -6,3 +6,4 @@ topic/
 .vscode
 logs/
 wandb/
+*.0
