@@ -17,13 +17,16 @@ sentiment:
     raw: "data/sentiment/raw"
     processed: "data/sentiment/processed"
     production: "data/sentiment/production"
-    version: "v3"
+    version: "v4"
     split_ratio:
       - 0.25
       - 0.25
     random_state: 42
+    no_classes: 3
+    embed_len: 128
   model:
-    path:
+    name: "distilbert-base-uncased"
+    path: "models/sentiment/v1"
     version: "v1"
 
 deployment:
