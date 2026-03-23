@@ -2,12 +2,14 @@ name : "Financial-News-Analysis"
 author : "Pranav Rao"
 version : "v1"
 
-categorize:
+topic:
   data:
     raw: "data/topic/raw"
     processed: "data/topic/processed"
     production: "data/topic/production"
     version: "v1"
+    train_valid_split: 0.25
+    random_state : 42
   model:
     path:
     version: "v1"
