@@ -2,7 +2,7 @@ name : "Financial-News-Analysis"
 author : "Pranav Rao"
 version : "v1"
 
-categorize:
+topic:
   data:
     raw: "data/topic/raw"
     processed: "data/topic/processed"
@@ -17,7 +17,9 @@ sentiment:
     raw: "data/sentiment/raw"
     processed: "data/sentiment/processed"
     production: "data/sentiment/production"
-    version: "v1"
+    version: "v2"
+    split_ratio: (0.25, 0.25)
+    random_state: 42
   model:
     path:
     version: "v1"
