@@ -3,3 +3,7 @@
 *.log
 *.env
 .vscode
+wandb/
+logs/
+*.0
+checkpoint-399/

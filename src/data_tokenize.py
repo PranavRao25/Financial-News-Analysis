@@ -16,7 +16,7 @@ def tokenize(dataset_path : Path, model_id : str, length : int):
         )
     
     tokenizer = AutoTokenizer.from_pretrained(model_id)
-    dataset = load_dataset("csv", data_files=str(dataset_path)) # type: ignore
+    dataset = load_dataset("csv", data_files=str(dataset_path))["train"] # type: ignore
     tokenized_dataset = dataset.map(tokenize_function, batched=True)
     return tokenized_dataset
 
