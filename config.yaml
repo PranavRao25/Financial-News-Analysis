@@ -1,0 +1,30 @@
+name : "Financial-News-Analysis"
+author : "Pranav Rao"
+version : "v1"
+
+categorize:
+  data:
+    raw: "data/topic/raw"
+    processed: "data/topic/processed"
+    production: "data/topic/production"
+    version: "v1"
+  model:
+    path:
+    version: "v1"
+
+sentiment:
+  data:
+    raw: "data/sentiment/raw"
+    processed: "data/sentiment/processed"
+    production: "data/sentiment/production"
+    version: "v1"
+  model:
+    path:
+    version: "v1"
+
+deployment:
+  logs:
+  version:
+
+post-production:
+  logs:
