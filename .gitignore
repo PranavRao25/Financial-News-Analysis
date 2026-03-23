@@ -2,4 +2,7 @@
 *.ipynb
 *.log
 *.env
-data/
+topic/
+.vscode
+logs/
+wandb/

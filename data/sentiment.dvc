@@ -1,0 +1,6 @@
+outs:
+- md5: e86e6aa84992e2772401aa398bb63895.dir
+  size: 304043
+  nfiles: 4
+  hash: md5
+  path: sentiment
