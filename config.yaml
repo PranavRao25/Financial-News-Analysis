@@ -17,8 +17,10 @@ sentiment:
     raw: "data/sentiment/raw"
     processed: "data/sentiment/processed"
     production: "data/sentiment/production"
-    version: "v2"
-    split_ratio: (0.25, 0.25)
+    version: "v3"
+    split_ratio:
+      - 0.25
+      - 0.25
     random_state: 42
   model:
     path:
