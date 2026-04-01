@@ -1,0 +1,4 @@
+actual - takala/financial_phrasebank/
+v2 - data_clean.py
+v3 - data_split.py
+v4 - data_tokenize.py

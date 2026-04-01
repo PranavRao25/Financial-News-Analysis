@@ -23,6 +23,10 @@ def tokenize(dataset_path : Path, model_id : str, length : int):
     tokenized_dataset = dataset.map(tokenize_function,
                                              batched=True,
                                              remove_columns=["label", "text"])
+    
+    tokenizer = AutoTokenizer.from_pretrained(model_id)
+    dataset = load_dataset("csv", data_files=str(dataset_path))["train"] # type: ignore
+    tokenized_dataset = dataset.map(tokenize_function, batched=True)
     return tokenized_dataset
 
 if __name__ == "__main__":
@@ -41,6 +45,9 @@ if __name__ == "__main__":
     root = configs["sentiment"]["data"]
     length = root["embed_len"]
     model_details = configs["sentiment"]["model"]
+    # root = configs["topic"]["data"]
+    # length = root["embed_len"]
+    # model_details = configs["topic"]["model"]
     model_id = model_details["name"]
     
     map_paths = {
@@ -56,4 +63,3 @@ if __name__ == "__main__":
         tokenized_dataset.save_to_disk(token_path)
     
     logger.info("DATA TOKENIZE PASS")
-    

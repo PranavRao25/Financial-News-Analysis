@@ -1,1 +1,10 @@
 datasets
+transformers
+torch
+streamlit
+transformers
+torch
+prometheus_client
+Pillow
+flask
+honcho
