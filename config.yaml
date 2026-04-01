@@ -8,6 +8,7 @@ topic:
     processed: "data/topic/processed"
     production: "data/topic/production"
     version: "v3"
+    mapping: "data/topic/mapping.json"
     train_valid_split: 0.25
     random_state : 42
     embed_len: 128
@@ -34,8 +35,25 @@ sentiment:
     version: "v1"
 
 deployment:
+  port: 8501  # Streamlit
   logs:
   version:
+
+monitoring:
+  port:
+    model: 8000 # model logging
+    streamlit: 8501 # streamlit
+    node: 9100  # node manager
+    alert: 5001 # alert mail server
+    alertmanager: 9093 # manage alerts and silences
+    prometheus: 9090 # prometheus server
+    grafana: 3000 # grafana dashboard
+  current_version: "v1"
+
+mail_alerts:
+  sender_mail: "hello@demomailtrap.co"
+  receiver_mail: "da25m022@smail.iitm.ac.in"
+  api: ${MAIL_API}  # from .env file
 
 post-production:
   logs:
