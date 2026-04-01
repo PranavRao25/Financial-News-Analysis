@@ -30,6 +30,7 @@ sentiment:
     processed: "data/sentiment/processed"
     production: "data/sentiment/production"
     version: "v4"
+    mapping: "data/sentiment/mapping.json"
     split_ratio:
       - 0.25
       - 0.25
@@ -62,7 +63,7 @@ monitoring:
     alertmanager: 9093 # manage alerts and silences
     prometheus: 9090 # prometheus server
     grafana: 3000 # grafana dashboard
-  current_version: "v1"
+  current_version: "v2"
 
 mail_alerts:
   sender_mail: "hello@demomailtrap.co"
