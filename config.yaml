@@ -46,6 +46,7 @@ sentiment:
       eval_batch_size: 64
       epochs: 1
       weight_decay: 0.01
+      gradient_accumulation_steps: 8
 
 deployment:
   port: 8501  # Streamlit

@@ -1,6 +1,6 @@
 import streamlit as st
 import os
-from inference import TopicModel
+from topic.inference import TopicModel
 import yaml
 from pathlib import Path
 import json

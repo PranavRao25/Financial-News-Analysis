@@ -9,7 +9,7 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 import re
 
-parent = Path(__file__).resolve().parent.parent
+parent = Path(__file__).resolve().parent.parent.parent
 
 def clean(filepath: Path) -> pd.DataFrame:
     """

@@ -7,6 +7,8 @@ from pathlib import Path
 import evaluate
 import numpy as np
 import torch
+assert torch.cuda.is_available(), "CUDA is not available. Check your PyTorch installation!"
+print(f"Using GPU: {torch.cuda.get_device_name(0)}")
 from datasets import load_dataset, load_from_disk
 from transformers import (
     AutoTokenizer, 
@@ -16,7 +18,7 @@ from transformers import (
     DataCollatorWithPadding
 )
 
-parent = Path(__file__).resolve().parent.parent
+parent = Path(__file__).resolve().parent.parent.parent
 
 def train(train_dataset_path, valid_dataset_path, model_path,
           model_id, no_classes, hyperparams):
@@ -26,7 +28,8 @@ def train(train_dataset_path, valid_dataset_path, model_path,
         predictions = np.argmax(logits, axis=-1)
         
         acc = accuracy_metric.compute(predictions=predictions, references=labels)
-        f1 = f1_metric.compute(predictions=predictions, references=labels, average="macro")
+        f1 = f1_metric.compute(predictions=predictions, references=labels,
+                               average="macro")
         
         return {"accuracy": acc["accuracy"], "f1_macro": f1["f1"]} # type: ignore
 
@@ -43,6 +46,7 @@ def train(train_dataset_path, valid_dataset_path, model_path,
     eval_batch_size = hyperparams.get("eval_batch_size", 64)
     epochs = hyperparams.get("epochs", 10)
     weight_decay = float(hyperparams.get("weight_decay", 0.01))
+    gradient_accumulation_steps = int(hyperparams.get("gradient_accumulation_steps", 8))
 
     tokenizer = AutoTokenizer.from_pretrained(model_id)
     data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
@@ -54,13 +58,16 @@ def train(train_dataset_path, valid_dataset_path, model_path,
     training_args = TrainingArguments(
         output_dir=model_path,
         learning_rate=lr,
+        optim="adamw_torch",
         per_device_train_batch_size=train_batch_size,
+        gradient_accumulation_steps=gradient_accumulation_steps,
         per_device_eval_batch_size=eval_batch_size,
         num_train_epochs=epochs,
         weight_decay=weight_decay,
         eval_strategy="epoch",
         save_strategy="epoch",
         logging_dir=model_path,
+        gradient_checkpointing=True,
         logging_steps=50,
         load_best_model_at_end=True,
         fp16=torch.cuda.is_available(),   # Mixed precision training for speed

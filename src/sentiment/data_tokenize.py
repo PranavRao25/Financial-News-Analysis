@@ -5,7 +5,7 @@ from pathlib import Path
 import numpy as np
 from transformers import AutoTokenizer
 
-parent = Path(__file__).resolve().parent.parent
+parent = Path(__file__).resolve().parent.parent.parent
 
 def tokenize(dataset_path : Path, model_id : str, length : int):
     def tokenize_function(examples):
