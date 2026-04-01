@@ -1,0 +1,281 @@
+{
+  "title": "Financial News Analysis v1",
+  "description": "Dashboard for Streamlit AI application metrics and Hardware metrics",
+  "tags": ["streamlit", "ai", "image"],
+  "timezone": "browser",
+  "refresh": "5s",
+  "schemaVersion": 38,
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Application Health",
+      "description": "Promotheus for Application is Up",
+      "gridPos": { "h": 6, "w": 4, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "expr": "up{job=\"financial-analysis\"}",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": { "text": "DOWN", "color": "red" },
+                "1": { "text": "UP", "color": "green" }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Inference Latency",
+      "description": "Calculates the average inference latency (seconds) per image",
+      "gridPos": { "h": 6, "w": 10, "x": 14, "y": 0 },
+      "targets": [
+        {
+          "expr": "sum by (mode) (rate(app_inference_latency_seconds_sum[1m])) / sum by (mode) (rate(app_inference_latency_seconds_count[1m]))",
+          "legendFormat": "{{mode}} mode latency",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "axisLabel": "Latency (sec)",
+            "axisPlacement": "left",
+            "drawStyle": "line",
+            "lineWidth": 2
+          }
+        }
+      },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "System CPU Utilization",
+      "description": "Tracks host CPU usage",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 6 },
+      "targets": [
+        {
+          "expr": "100 - (avg by(instance) (rate(node_cpu_seconds_total{mode=\"idle\"}[1m])) * 100)",
+          "legendFormat": "Total CPU Usage %",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "custom": {
+            "axisLabel": "Utilization (%)",
+            "axisPlacement": "left",
+            "drawStyle": "line",
+            "fillOpacity": 20
+          }
+        }
+      },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "System & App Memory Utilization",
+      "description": "Monitors available host memory",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 6 },
+      "targets": [
+        {
+          "expr": "node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes",
+          "legendFormat": "Total Host RAM Used",
+          "refId": "A"
+        },
+        {
+          "expr": "app_model_memory_bytes",
+          "legendFormat": "App RSS Memory (Model)",
+          "refId": "B"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "min": 0,
+          "custom": {
+            "axisLabel": "Memory (Bytes)",
+            "axisPlacement": "left",
+            "drawStyle": "line"
+          }
+        }
+      },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }
+      }
+    },
+    {
+      "type": "table",
+      "title": "Recent Alert Events",
+      "description": "Displays all active alerts handled by Alertmanager",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 14 },
+      "targets": [
+        {
+          "expr": "ALERTS",
+          "format": "table",
+          "instant": true,
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto"
+          }
+        }
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Active Requests",
+      "description": "Number of images currently to be processed",
+      "gridPos": { "h": 6, "w": 4, "x": 0, "y": 14 },
+      "targets": [
+        {
+          "expr": "sum(app_active_requests_current)",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": { "mode": "value" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 10 },
+              { "color": "red", "value": 20 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Request vs. Exception Rate",
+      "description": "Total incoming requests vs Exceptions",
+      "gridPos": { "h": 6, "w": 10, "x": 4, "y": 14 },
+      "targets": [
+        {
+          "expr": "sum by (mode) (increase(app_total_requests_total[1m]))",
+          "legendFormat": "Requests ({{mode}})",
+          "refId": "A"
+        },
+        {
+          "expr": "sum by (mode, error_type) (increase(app_total_errors_total[1m]))",
+          "legendFormat": "Errors ({{mode}} - {{error_type}})",
+          "refId": "B"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "axisLabel": "Count / Minute",
+            "axisPlacement": "left",
+            "drawStyle": "line",
+            "lineWidth": 2
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byRegexp", "options": ".*Errors.*" },
+            "properties": [
+              { "id": "color", "value": { "mode": "fixed", "fixedColor": "red" } }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Disk Read",
+      "description": "Disk Read Latency",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 28},
+      "targets": [
+        {
+          "expr": "rate(node_disk_read_bytes_total[1m])",
+          "legendFormat": "Read ({{device}})",
+          "refId": "A"
+        },
+        {
+          "expr": "rate(node_disk_written_bytes_total[1m])",
+          "legendFormat": "Written ({{device}})",
+          "refId": "B"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps",
+          "custom": {
+            "axisLabel": "Count / Minute",
+            "axisPlacement": "left",
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 2
+          }
+        }
+      },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
+        "tooltip": {"mode": "multi"}
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "CPU Context Switch",
+      "description": "Context Switching per sec in CPU",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 28 },
+      "targets": [
+        {
+          "expr": "rate(node_context_switches_total[1m])",
+          "legendFormat": "Switches / sec",
+          "refId": "A"
+        },
+        {
+          "expr": "rate(node_intr_total[1m])",
+          "legendFormat": "Interrupts / sec"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "custom": {
+            "axisLabel": "Operations / Second",
+            "axisPlacement": "left",
+            "drawStyle": "line",
+            "lineWidth": 2
+          }
+        }
+      },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
+        "tooltip": {"mode": "multi"}
+      }
+    }
+  ],
+  "templating": {
+    "list": []
+  }
+}
