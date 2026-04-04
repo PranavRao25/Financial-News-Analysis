@@ -14,6 +14,7 @@ topic:
     embed_len: 128
     no_classes: 20
   model:
+    device: "cuda"
     name: "huawei-noah/TinyBERT_General_4L_312D"
     path: "models/topic/v1"
     version: "v1"

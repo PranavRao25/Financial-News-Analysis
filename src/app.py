@@ -1,12 +1,13 @@
 import streamlit as st
 import os
-from topic.inference import TopicModel
+from topic.topic_inference import TopicModel
 from sentiment.inference import SentimentModel
 import yaml
 from pathlib import Path
 import json
 from uuid import uuid4
 import io
+from io import StringIO
 import psutil
 import zipfile
 from prometheus_client import start_http_server, Counter, Gauge, Histogram, Info, Summary
@@ -124,7 +125,7 @@ def infer(txt, mode, model_name, model, mapping):
     finally:
         metrics["active_requests"].labels(session_id=session_id).dec() # type: ignore
 
-uploaded_file = st.file_uploader("Choose a file", type=["jpg", "png", "jpeg", "text", "pdf", "zip"])
+uploaded_file = st.file_uploader("Choose a file", type=["jpg", "png", "jpeg", "txt", "pdf", "zip"])
 # txt = st.text_area("Text to analyse", "")
 
 if uploaded_file is not None:
@@ -139,7 +140,8 @@ if uploaded_file is not None:
     elif uploaded_file.type == "application/zip":
         pass
     elif uploaded_file.type == "text/plain":
-        pass
+        stringio = StringIO(uploaded_file.getvalue().decode("utf-8"))
+        txt = stringio.read()
 
     # Sentiment Analysis
     mode = "sentiment"
