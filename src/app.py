@@ -10,6 +10,10 @@ import io
 import psutil
 import zipfile
 from prometheus_client import start_http_server, Counter, Gauge, Histogram, Info, Summary
+import cv2
+import pytesseract
+from PIL import Image
+import matplotlib.pyplot as plt
 
 st.title("Financial News Analysis")
 
@@ -102,40 +106,56 @@ st.write(f"Model used for Topic Modelling - {topic_model_name}")
 # TEMP : TEXT BOX TO TAKE INPUT
 # LATER INCLUDE TESSERACT FOR OCR
 
-txt = st.text_area("Text to analyse", "")
-if st.button("Classify", type="primary"):
-    metrics["active_requests"].labels(session_id=session_id).inc() # type: ignore
-    
-    # Sentiment Analysis
-    mode = "sentiment"
+def infer(txt, mode, model_name, model, mapping):
     metrics["requests"].labels(mode=mode).inc() # type: ignore
     try:
-        with metrics["inference_latency"].labels(mode=mode, model_type=sent_model_name).time(): # type: ignore
-            results = sentiment.predict([txt])
+        with metrics["inference_latency"].labels(mode=mode, model_type=model_name).time(): # type: ignore
+            results = model.predict([txt])
             for item in results:
-                label = str(sent_mapping[str(item["predicted_class"])])
-                st.write(item["text"])
-                st.write(f"Sentiment - {label} \n Confidence - {item["confidence"]}")
+                label = str(mapping[str(item["predicted_class"])])
+                # st.write(item["text"])
+                st.write(f"{str(mode).capitalize()} - {label} | \n Confidence - {item["confidence"]}")
     except Exception as e:
         error_name = type(e).__name__
-        metrics["error"].labels(mode=mode, error_type=error_name).inc() # type: ignore
         st.error(f"Error in processing : {error_name}")
+        st.write(metrics)
+        st.write(mode)
+        metrics["errors"].labels(mode=mode, error_types=error_name).inc() # type: ignore
     finally:
         metrics["active_requests"].labels(session_id=session_id).dec() # type: ignore
 
+uploaded_file = st.file_uploader("Choose a file", type=["jpg", "png", "jpeg", "text", "pdf", "zip"])
+# txt = st.text_area("Text to analyse", "")
+
+if uploaded_file is not None:
+    file_size = uploaded_file.size
+    metrics["active_requests"].labels(session_id=session_id).inc() # type: ignore
+    
+    if str(uploaded_file.type).split("/")[0] == "image":
+        img = Image.open(uploaded_file).convert("RGB")
+        txt = str(pytesseract.image_to_string(img))  # check for language also
+    elif uploaded_file.type == "application/pdf":
+        pass
+    elif uploaded_file.type == "application/zip":
+        pass
+    elif uploaded_file.type == "text/plain":
+        pass
+
+    # Sentiment Analysis
+    mode = "sentiment"
+    infer(txt, mode, sent_model_name, sentiment, sent_mapping)
+
     # Topic Modelling
     mode = "topic"
-    metrics["requests"].labels(mode=mode).inc() # type: ignore
-    try:
-        with metrics["inference_latency"].labels(mode=mode, model_type=topic_model_name).time(): # type: ignore
-            results = topic.predict([txt])
-            for item in results:
-                label = str(topic_mapping[str(item["predicted_class"])])
-                st.write(item["text"])
-                st.write(f"Topic - {label} \n Confidence - {item["confidence"]}")
-    except Exception as e:
-        error_name = type(e).__name__
-        metrics["error"].labels(mode=mode, error_type=error_name).inc() # type: ignore
-        st.error(f"Error in processing : {error_name}")
-    finally:
-        metrics["active_requests"].labels(session_id=session_id).dec() # type: ignore
+    infer(txt, mode, topic_model_name, topic, topic_mapping)
+
+# elif st.button("Classify", type="primary"):
+#     metrics["active_requests"].labels(session_id=session_id).inc() # type: ignore
+
+#     # Sentiment Analysis
+#     mode = "sentiment"
+#     infer(txt, mode, sent_model_name, sentiment, sent_mapping)
+
+#     # Topic Modelling
+#     mode = "topic"
+#     metrics["requests"].labels(mode=mode).inc() # type: ignore
