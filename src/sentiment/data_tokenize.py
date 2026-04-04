@@ -5,19 +5,25 @@ from pathlib import Path
 import numpy as np
 from transformers import AutoTokenizer
 
-parent = Path(__file__).resolve().parent.parent
+parent = Path(__file__).resolve().parent.parent.parent
 
 def tokenize(dataset_path : Path, model_id : str, length : int):
     def tokenize_function(examples):
-        return tokenizer(
+        tokenized_inputs =  tokenizer(
             examples["text"], 
-            truncation=True, 
+            truncation=True,
             max_length=length
         )
+        tokenized_inputs["labels"] = [label2id[label] for label in examples["label"]]
+        return tokenized_inputs
     
+    label2id = {"negative": 0, "neutral": 1, "positive": 2}
     tokenizer = AutoTokenizer.from_pretrained(model_id)
     dataset = load_dataset("csv", data_files=str(dataset_path))["train"] # type: ignore
-    tokenized_dataset = dataset.map(tokenize_function, batched=True)
+    tokenized_dataset = dataset.map(tokenize_function,
+                                             batched=True,
+                                             remove_columns=["label", "text"])
+    
     return tokenized_dataset
 
 if __name__ == "__main__":
@@ -33,9 +39,9 @@ if __name__ == "__main__":
     with open(parent / "config.yaml", "r") as f:
         configs = yaml.full_load(f)
 
-    root = configs["topic"]["data"]
+    root = configs["sentiment"]["data"]
     length = root["embed_len"]
-    model_details = configs["topic"]["model"]
+    model_details = configs["sentiment"]["model"]
     model_id = model_details["name"]
     
     map_paths = {

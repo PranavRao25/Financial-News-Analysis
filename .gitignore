@@ -14,3 +14,6 @@ alertmanager-0.31.1.linux-amd64/alertmanager
 alertmanager-0.31.1.linux-amd64/amtool
 progress.md
 grafana-enterprise_12.4.1_22846628243_linux_amd64.deb
+data/images/
+data/papers/
+models/sentiment/v1/checkpoint-5/
