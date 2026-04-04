@@ -27,7 +27,7 @@ def train(train_dataset_path, valid_dataset_path, model_path,
         predictions = np.argmax(logits, axis=-1)
         return metric.compute(predictions=predictions, references=labels)
 
-    metric = evaluate.load("accuracy")  # TODO: CHANGE THE METRIC
+    metric = evaluate.load("f1")  # TODO: CHANGE THE METRIC
     
     # PREPARE THE DATASET
     train_dataset = load_from_disk(str(train_dataset_path))
