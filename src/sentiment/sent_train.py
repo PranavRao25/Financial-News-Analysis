@@ -7,6 +7,7 @@ from pathlib import Path
 import evaluate
 import numpy as np
 import torch
+import wandb
 assert torch.cuda.is_available(), "CUDA is not available. Check your PyTorch installation!"
 print(f"Using GPU: {torch.cuda.get_device_name(0)}")
 from datasets import load_dataset, load_from_disk
@@ -23,6 +24,16 @@ parent = Path(__file__).resolve().parent.parent.parent
 def train(train_dataset_path, valid_dataset_path, model_path,
           model_id, no_classes, hyperparams):
     
+    run = wandb.init(
+        project="financial_news_sentiment",
+        name=model_id,
+        tags=["baseline", model_id],
+        config={
+            "architecture": model_id,
+            **hyperparams
+        }
+    )
+
     def compute_metrics(eval_pred):
         logits, labels = eval_pred
         predictions = np.argmax(logits, axis=-1)
@@ -54,6 +65,7 @@ def train(train_dataset_path, valid_dataset_path, model_path,
         model_id, 
         num_labels=no_classes
     )
+    wandb.watch(model, log="all", log_freq=100)
 
     training_args = TrainingArguments(
         output_dir=model_path,
@@ -85,6 +97,18 @@ def train(train_dataset_path, valid_dataset_path, model_path,
 
     trainer.train()
     trainer.save_model(model_path)
+    
+    run.alert(
+        title=f"Training Run Complete {model_id}",
+        text = f"{model_id} training done",
+        level="INFO",
+        wait_duration=0
+    )
+
+    param_counts = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    wandb.log({"trainable_parameters": param_counts})
+
+    wandb.finish()
 
 if __name__ == "__main__":
     logging.basicConfig(
@@ -106,8 +130,13 @@ if __name__ == "__main__":
 
     model_details = configs["sentiment"]["model"]
     model_path = model_details["path"]
-    model_id = model_details["name"]
-    hyperparams = model_details["hyperparams"]
-    
-    train(train_dataset_path, valid_dataset_path, model_path, model_id, no_classes, hyperparams)
+    # model_id = model_details["name"]
+    # hyperparams = model_details["hyperparams"]
+
+    with open("models.json", "r") as f:
+        models = json.load(f)
+
+    for model in models:
+        model_id, hyperparams = model["name"], model["hyperparams"]
+        train(train_dataset_path, valid_dataset_path, model_path, model_id, no_classes, hyperparams)
     logger.debug("MODEL TRAIN PASS")

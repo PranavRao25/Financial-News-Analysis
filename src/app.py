@@ -1,7 +1,7 @@
 import streamlit as st
 import os
 from topic.inference import TopicModel
-from sentiment.inference import SentimentModel
+from src.sentiment.sent_inference import SentimentModel
 import yaml
 from pathlib import Path
 import json

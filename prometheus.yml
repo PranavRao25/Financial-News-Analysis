@@ -1,0 +1,9 @@
+global:
+  scrape_interval: 5s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'financial_model_inference'
+    # Scrape the metrics server running inside the model_server container
+    static_configs:
+      - targets: ['model_server:8000']
