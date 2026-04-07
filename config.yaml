@@ -51,13 +51,13 @@ sentiment:
       gradient_accumulation_steps: 8
 
 deployment:
-  port: 8501  # Streamlit
+  port: 6969  # Flask
   logs:
-  version:
+  version: "v2"
 
 monitoring:
   port:
-    model: 8000 # model logging
+    model: 8001 # model logging
     streamlit: 8501 # streamlit
     node: 9100  # node manager
     alert: 5001 # alert mail server

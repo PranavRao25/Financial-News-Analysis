@@ -1,5 +1,8 @@
-from flask import Flask, request, render_template, jsonify
+import uuid
+
+from flask import Flask, request, render_template, jsonify, flash, redirect, url_for
 from prometheus_client import start_http_server, Counter, Gauge, Histogram, Info, Summary
+from werkzeug.utils import secure_filename
 import os
 from topic.topic_inference import TopicModel
 from sentiment.inference import SentimentModel
@@ -16,16 +19,19 @@ import yaml
 from pathlib import Path
 import logging
 
+print("Financial News Analysis app started")
+
 app = Flask(__name__)
 parent = Path(__file__).resolve().parent.parent
 
-with open(parent / "configs.yaml", 'r') as f:
+with open(parent / "config.yaml", 'r') as f:
     configs = yaml.full_load(f)
 
 # title - Financial News Analysis
 # Sentiment Analysis & Topic Modelling
 
 def init_metrics_server(port=8000):
+    print(f"Metrics server on port = {port}")
     start_http_server(port)
     return True
 
@@ -58,12 +64,37 @@ def get_metrics():
     }
 
 def init_topic_model(path):
+    print("Init topic model")
     topic = TopicModel(path)
     return topic
 
 def init_sentiment_model(path):
+    print("Init Sentiment model")
     sentiment = SentimentModel(path)
     return sentiment
+
+def analyse(file, ext):
+    if ext in {"jpg", "jpeg", "png"}:
+        img = Image.open(file.stream).convert("RGB")
+        txt = str(pytesseract.image_to_string(img))  # check for language also
+    elif ext in {"pdf"}:
+        txt = ""
+    elif ext in {"zip"}:
+        txt = ""
+    elif ext in {"txt"}:
+        txt = file.read().decode("utf-8")
+
+    if not txt.strip():  # text empty
+        raise ValueError("Text empty")
+    
+    sent_label, sent_conf = infer(txt, "sentiment", sent_model_name, sentiment, sent_mapping)
+    topic_label, topic_conf = infer(txt, "topic", topic_model_name, topic, topic_mapping)
+
+    return {
+        "sentiment": {"label": sent_label, "confidence": sent_conf},
+        "topic": {"label": topic_label, "confidence": topic_conf},
+        "text": txt
+    }
 
 def infer(txt, mode, model_name, model, mapping):
     metrics["requests"].labels(mode=mode).inc() # type: ignore
@@ -72,8 +103,7 @@ def infer(txt, mode, model_name, model, mapping):
             results = model.predict([txt])
             for item in results:
                 label = str(mapping[str(item["predicted_class"])])
-                # st.write(item["text"])
-                # st.write(f"{str(mode).capitalize()} - {label} | \n Confidence - {item["confidence"]}")
+                confidence = item["confidence"]
     except Exception as e:
         error_name = type(e).__name__
         # st.error(f"Error in processing : {error_name}")
@@ -83,16 +113,19 @@ def infer(txt, mode, model_name, model, mapping):
     finally:
         metrics["active_requests"].labels(session_id=session_id).dec() # type: ignore
 
+    return label, confidence
+
 with open(parent / configs["topic"]["data"]["mapping"], "r") as f:
     topic_mapping = json.load(f)
 
 with open(parent / configs["sentiment"]["data"]["mapping"], "r") as f:
     sent_mapping = json.load(f)
 
-init_metrics_server(configs["monitoring"]["port"]["model"])
-metrics = get_metrics()
+if os.environ.get("WERKZEUG_RUN_MAIN") == "true" or not app.debug:
+    init_metrics_server(configs["monitoring"]["port"]["model"])
+    process = psutil.Process(os.getpid())
 
-process = psutil.Process(os.getpid())
+metrics = get_metrics()
 metrics["model_memory_usage"].set(process.memory_info().rss) # type: ignore
 
 topic_model_name = configs["topic"]["model"]["name"]
@@ -107,32 +140,69 @@ port = configs["deployment"]["port"]
 # st.write(f"Model used for Sentiment Analysis - {sent_model_name}")
 # st.write(f"Model used for Topic Modelling - {topic_model_name}")
 
-# TODO: Add a file upload button
+session_id = uuid.uuid4()
+app.config["SESSION_ID"] = session_id
+app.config["UPLOAD_DIR"] = parent / "output"
+ALLOWED_EXTENSIONS = {"pdf", "txt", "jpeg", "jpg", "png"}
+app.config["MAX_FILE_SIZE"] = 100 * 1000 * 1000
+app.config["CORS_HEADER"] = "application/json"
 
-@app.route('/', method=['GET', 'POST'])
+print("App running")
+
+@app.route('/', methods=["GET", "POST"]) # type: ignore
 def root():
     """
         Homepage for model performance
     """
 
     if request.method == "POST":
-        try:
-            data = request.get_json() if request.is_json else request.form
-        except:
-            return "Invalid input: expected data", 400
+        print(request.files)
+        if "file" not in request.files:
+            return jsonify({"message": "No file uploaded"}), 400
         
-        value = []
+        file = request.files.get("file")
+        filename = ""
 
-        if request.is_json or request.headers.get("Accept") == "application/json":
-            return jsonify(value)
+        if file and file.filename:
+            filename = secure_filename(file.filename)
+            ext = filename.split('.')[-1]
+            if ext not in ALLOWED_EXTENSIONS:
+                return jsonify({"message": "File type not allowed"}), 400
+            
+            try:
+                output = analyse(file, ext)
+                return output, 200
+            except Exception as e:
+                logging.error(f"{e}")
+                return jsonify({"message": f"Cannot analyse file ; {e}"}), 500
+        else:
+            return jsonify({"message": "No selected file"}), 400
+        # for f in file:
+        #     if f and f.filename:
+        #         filename = secure_filename(f.filename)
+        #         ext = filename.split('.')[-1]
+        #         if ext not in ALLOWED_EXTENSIONS:
+        #             return jsonify({"message": "File type not allowed"}), 400
+                
+        #         try:
+        #             output = analyse(file, ext)
+        #             return output, 200
+        #         except Exception as e:
+        #             logging.error(f"{e}")
+        #             return jsonify({"message": f"Cannot analyse file ; {e}"}), 500
+        #     else:
+        #         return jsonify({"message": "No selected file"}), 400
+    else:
+        return render_template("index.html")
         
-@app.route("/health", method=["GET", "POST"])
-def health():
-    pass
+# @app.route("/health", methods=["GET", "POST"])
+# def health():
+#     pass
 
-@app.route("/ready", method=["GET", "POST"])
-def ready():
-    pass
+# @app.route("/ready", methods=["GET", "POST"])
+# def ready():
+#     pass
 
 if __name__ == "__main__":
-    app.run(debug=True, port=port)
+    print(f"Run app on port = {port}")
+    app.run(debug=True, port=port, use_reloader=False)
