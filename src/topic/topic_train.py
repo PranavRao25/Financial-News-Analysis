@@ -7,6 +7,7 @@ from pathlib import Path
 import evaluate
 import numpy as np
 import torch
+import wandb
 from datasets import load_dataset, load_from_disk
 from transformers import (
     AutoTokenizer, 
@@ -21,6 +22,16 @@ parent = Path(__file__).resolve().parent.parent.parent
 def train(train_dataset_path, valid_dataset_path, model_path,
           model_id, no_classes, hyperparams, device):
     
+    run = wandb.init(
+        project="financial-news-sentiment",
+        name=model_id,
+        tags=["baseline", model_id],
+        config={
+            "architecture": model_id,
+            **hyperparams
+        }
+    )
+
     def compute_metrics(eval_pred):
         logits, labels = eval_pred
         # argmax over the last dimension to get predicted class indices
@@ -34,10 +45,10 @@ def train(train_dataset_path, valid_dataset_path, model_path,
     valid_dataset = load_from_disk(str(valid_dataset_path))
 
     # PREPARE THE MODEL
-    lr = float(hyperparams.get("lr", 1e-5))
+    lr = float(hyperparams.get("lr", 2e-5))
     train_batch_size = hyperparams.get("train_batch_size", 32)
     eval_batch_size = hyperparams.get("eval_batch_size", 64)
-    epochs = hyperparams.get("epochs", 10)
+    epochs = hyperparams.get("epochs", 5)
     weight_decay = float(hyperparams.get("weight_decay", 0.01))
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -48,6 +59,8 @@ def train(train_dataset_path, valid_dataset_path, model_path,
         model_id, 
         num_labels=no_classes
     ).to(device)
+
+    wandb.watch(model, log="all", log_freq=100)
 
     training_args = TrainingArguments(
         output_dir=model_path,
@@ -62,6 +75,8 @@ def train(train_dataset_path, valid_dataset_path, model_path,
         logging_steps=50,
         load_best_model_at_end=True,
         fp16=torch.cuda.is_available(),   # Mixed precision training for speed
+        report_to="wandb",
+        run_name=model_id
     )
 
     trainer = Trainer(
@@ -76,6 +91,18 @@ def train(train_dataset_path, valid_dataset_path, model_path,
 
     trainer.train()
     trainer.save_model(model_path)
+
+    run.alert(
+        title=f"Training Run Complete {model_id}",
+        text = f"Model {model_id} Trained. ",
+        level="INFO",
+        wait_duration=0
+    )
+
+    param_counts = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    wandb.log({"trainable_parameters": param_counts})
+
+    wandb.finish()
 
 if __name__ == "__main__":
     logging.basicConfig(
@@ -97,9 +124,15 @@ if __name__ == "__main__":
 
     model_details = configs["topic"]["model"]
     model_path = model_details["path"]
-    model_id = model_details["name"]
-    hyperparams = model_details["hyperparams"]
+    # model_id = model_details["name"]
+    # hyperparams = model_details["hyperparams"]
     device = model_details["device"]
+
+    with open("models.json", "r") as f:
+        models = json.load(f)
     
-    train(train_dataset_path, valid_dataset_path, model_path, model_id, no_classes, hyperparams, device)
+    for model in models:
+        model_id, hyperparams = model["name"], model["hyperparams"]
+        train(train_dataset_path, valid_dataset_path, model_path,
+              model_id, no_classes, hyperparams, device)
     logger.debug("MODEL TRAIN PASS")
