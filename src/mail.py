@@ -5,9 +5,12 @@ import logging
 import json
 import mailtrap as mt
 import os
+from dotenv import load_dotenv
 
 app = Flask(__name__)
 parent = Path(__file__).resolve().parent.parent
+
+load_dotenv(parent / ".env")
 
 with open(parent / "config.yaml", "r") as f:
     raw_path = f.read()
@@ -28,9 +31,11 @@ def send_mail(subject, body):
             subject=subject,
             text=body
         )
-
+        print(mail)
         client = mt.MailtrapClient(token=MAIL_API)
+        print(client)
         response = client.send(mail)
+        print(response)
         return response
     except Exception as e:
         print(f"Failed with exception : {e}")

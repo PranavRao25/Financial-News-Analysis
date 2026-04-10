@@ -55,6 +55,7 @@ deployment:
   version:
 
 monitoring:
+  url: "localhost"
   port:
     model: 8000 # model logging
     streamlit: 8501 # streamlit
@@ -63,11 +64,12 @@ monitoring:
     alertmanager: 9093 # manage alerts and silences
     prometheus: 9090 # prometheus server
     grafana: 3000 # grafana dashboard
+    mlflow: 5000  # model experiment tracking
   current_version: "v2"
 
 mail_alerts:
   sender_mail: "hello@demomailtrap.co"
-  receiver_mail: "da25m022@smail.iitm.ac.in"
+  receiver_mail: "icare9004@gmail.com"
   api: ${MAIL_API}  # from .env file
 
 post-production:

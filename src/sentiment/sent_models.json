@@ -1,0 +1,18 @@
+[
+    {
+        "name": "huawei-noah/TinyBERT_General_4L_312D",
+        "hyperparams": {
+            "lr": 4e-5,
+            "epochs": 6,
+            "weight_decay": 0.01
+        }
+    },
+    {
+        "name": "CardiffNLP/twitter-roberta-base-sentiment",
+        "hyperparams": {
+            "lr": 2e-5,
+            "epochs": 3,
+            "weight_decay": 0.01
+        }
+    }
+]
