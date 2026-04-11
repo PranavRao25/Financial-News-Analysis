@@ -9,13 +9,13 @@ import numpy as np
 import datetime
 import os
 import torch
-# import wandb
 import mlflow.transformers as mpt
 import importlib.util
 import mlflow
 from mlflow.models import infer_signature
+from mlflow.tracking import MlflowClient
 
-mpt.autolog(log_model_signatures=True, log_models=True)
+mpt.autolog(log_model_signatures=True)
 mlflow.enable_system_metrics_logging()
 assert torch.cuda.is_available(), "CUDA is not available. Check your PyTorch installation!"
 print(f"Using GPU: {torch.cuda.get_device_name(0)}")
@@ -34,8 +34,6 @@ spec = importlib.util.spec_from_file_location(mname, path)
 assert spec is not None
 mod = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(mod) # type: ignore
-
-# from src.mail import send_mail
 
 parent = Path(__file__).resolve().parent.parent.parent
 db = parent  / "mlflow.db"
@@ -59,16 +57,6 @@ def failure_mail(run_name, exp_name, model_id, e):
     mod.send_mail(subject, body)
 
 def train(train_dataset_path, valid_dataset_path, model_path, model_id, no_classes, exp, hyperparams):
-    # run = wandb.init(
-    #     project="financial_news_sentiment",
-    #     name=model_id,
-    #     tags=["baseline", model_id],
-    #     config={
-    #         "architecture": model_id,
-    #         **hyperparams
-    #     }
-    # )
-
     print(f"Model {model_id} training start")
     run = mlflow.start_run(experiment_id=exp.experiment_id, run_name=model_id, 
                            description=f"Test the performance of {model_id} for topic modelling")
@@ -109,7 +97,6 @@ def train(train_dataset_path, valid_dataset_path, model_path, model_id, no_class
             model_id, 
             num_labels=no_classes
         )
-        # wandb.watch(model, log="all", log_freq=100)
 
         training_args = TrainingArguments(
             output_dir=model_path,
@@ -146,20 +133,21 @@ def train(train_dataset_path, valid_dataset_path, model_path, model_id, no_class
         mlflow.log_metrics(results)
 
         trainer.save_model(model_path)
-    
-        # run.alert(
-        #     title=f"Training Run Complete {model_id}",
-        #     text = f"{model_id} training done",
-        #     level="INFO",
-        #     wait_duration=0
-        # )
 
         # param_counts = sum(p.numel() for p in model.parameters() if p.requires_grad)
         # mlflow.log_param("param_count", param_counts)
-        # wandb.log({"trainable_parameters": param_counts})
 
-        # wandb.finish()
-        # mpt.log_model(model, name="model")
+        model_info = mpt.log_model(
+            transformers_model={"model": model, "tokenizer": tokenizer},
+            artifact_path="model",
+            registered_model_name=f"Financial_Sentiment_{model_id}"
+        )
+        client = MlflowClient()
+        client.transition_model_version_stage(
+            name=f"Financial_Sentiment_{model_id}",
+            version=str(model_info.registered_model_version),
+            stage="Staging"
+        )
         print("Training Done")
         successful_mail(run.info.run_name, exp.name, model_id, results)
     except Exception as e:
@@ -188,21 +176,9 @@ if __name__ == "__main__":
 
     model_details = configs["sentiment"]["model"]
     model_path = model_details["path"]
-    # model_id = model_details["name"]
-    # hyperparams = model_details["hyperparams"]
 
     with open(parent / "src/sentiment/sent_models.json", "r") as f:
         models = json.load(f)
-
-    # mlflow.set_tracking_uri(uri=f"http://{configs["monitoring"]["url"]}:{configs["monitoring"]["port"]["mlflow"]}")
-
-    # if experiment is not None:
-    #     print(experiment.experiment_id)
-    # else:
-    #     print("No experiment found")
-
-    # exp_id = mlflow.create_experiment("Sentiment_Analysis_Model_Comparisons", artifact_location=str(parent / "models"))
-    # print(f"Experiment ID : {exp_id}")
 
     experiment = mlflow.get_experiment_by_name("Sentiment_Analysis_Model_Comparisons")
     if experiment:
@@ -218,7 +194,6 @@ if __name__ == "__main__":
             train(train_dataset_path, valid_dataset_path, model_path, model_id, no_classes, exp, hyperparams)
     except Exception as e:
         print(e)
-        # os.remove(str(parent / "mlflow.db"))
         raise e
     finally:
         logger.debug("MODEL TRAIN PASS")
