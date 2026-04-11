@@ -1,5 +1,6 @@
 stages:
   data_prep:
+    wdir: ../../
     cmd: python data_prep.py
     deps:
       - data_prep.py
@@ -17,6 +18,7 @@ stages:
       - data/topic/processed/test.csv
 
   data_tokenize:
+    wdir: ../../
     cmd: python data_tokenize.py
     deps:
       - data_tokenize.py
@@ -34,6 +36,7 @@ stages:
       - data/topic/processed/test
 
   train:
+    wdir: ../../
     cmd: python train.py
     deps:
       - train.py
