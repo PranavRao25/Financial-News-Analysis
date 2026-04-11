@@ -14,11 +14,6 @@ import importlib.util
 import mlflow
 from mlflow.models import infer_signature
 from mlflow.tracking import MlflowClient
-
-mpt.autolog(log_model_signatures=True)
-mlflow.enable_system_metrics_logging()
-assert torch.cuda.is_available(), "CUDA is not available. Check your PyTorch installation!"
-print(f"Using GPU: {torch.cuda.get_device_name(0)}")
 from datasets import load_dataset, load_from_disk
 from transformers import (
     AutoTokenizer, 
@@ -27,6 +22,11 @@ from transformers import (
     Trainer,
     DataCollatorWithPadding
 )
+
+mpt.autolog(log_model_signatures=True)
+mlflow.enable_system_metrics_logging()
+assert torch.cuda.is_available(), "CUDA is not available. Check your PyTorch installation!"
+print(f"Using GPU: {torch.cuda.get_device_name(0)}")
 
 path = "src/utils/mail.py"
 mname = "mail"
@@ -139,12 +139,13 @@ def train(train_dataset_path, valid_dataset_path, model_path, model_id, no_class
 
         model_info = mpt.log_model(
             transformers_model={"model": model, "tokenizer": tokenizer},
-            artifact_path="model",
-            registered_model_name=f"Financial_Sentiment_{model_id}"
+            name="model",
+            task="text-classification",
+            registered_model_name=f"Financial_Sentiment_{model_id.replace("/", "_")}"
         )
         client = MlflowClient()
         client.transition_model_version_stage(
-            name=f"Financial_Sentiment_{model_id}",
+            name=f"Financial_Sentiment_{model_id.replace("/", "_")}",
             version=str(model_info.registered_model_version),
             stage="Staging"
         )
