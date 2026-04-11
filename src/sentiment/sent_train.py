@@ -28,7 +28,7 @@ from transformers import (
     DataCollatorWithPadding
 )
 
-path = "src/mail.py"
+path = "src/utils/mail.py"
 mname = "mail"
 spec = importlib.util.spec_from_file_location(mname, path)
 assert spec is not None
