@@ -1,0 +1,5 @@
+actual - zeroshot/twitter-financial-news-topic
+v2 - data_prep.py
+v3 - data_tokenize.py
+
+(actual valid.csv is written as test.csv)

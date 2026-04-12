@@ -1,3 +1,4 @@
+mlflow: mlflow server --backend-store-uri sqlite:///./mlflow.db --default-artifact-root ./models --host 0.0.0.0 --port 5000
 prometheus: ./prometheus-3.10.0.linux-amd64/prometheus --config.file=prometheus-3.10.0.linux-amd64/prometheus.yml
 alertmanager: ./alertmanager-0.31.1.linux-amd64/alertmanager --config.file=alertmanager-0.31.1.linux-amd64/alertmanager.yml
 node_exporter: ./node_exporter-1.10.2.linux-amd64/node_exporter
