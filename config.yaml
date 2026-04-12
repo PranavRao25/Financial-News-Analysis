@@ -68,7 +68,7 @@ monitoring:
 
 mail_alerts:
   sender_mail: "hello@demomailtrap.co"
-  receiver_mail: "da25m022@smail.iitm.ac.in"
+  receiver_mail: "icare9004@gmail.com"
   api: ${MAIL_API}  # from .env file
 
 post-production:

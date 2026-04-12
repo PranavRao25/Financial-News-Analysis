@@ -17,3 +17,4 @@ grafana-enterprise_12.4.1_22846628243_linux_amd64.deb
 data/images/
 data/papers/
 models/sentiment/v1/checkpoint-5/
+mlruns/

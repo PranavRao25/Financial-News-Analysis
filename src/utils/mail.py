@@ -5,9 +5,12 @@ import logging
 import json
 import mailtrap as mt
 import os
+from dotenv import load_dotenv
 
 app = Flask(__name__)
-parent = Path(__file__).resolve().parent.parent
+parent = Path(__file__).resolve().parent.parent.parent
+
+load_dotenv(parent / ".env")
 
 with open(parent / "config.yaml", "r") as f:
     raw_path = f.read()
