@@ -18,3 +18,4 @@ data/images/
 data/papers/
 models/sentiment/v1/checkpoint-5/
 mlruns/
+models/
