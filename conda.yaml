@@ -13,10 +13,13 @@ dependencies:
   - tensorflow
   - tqdm
   - pillow
-  - transformers
   - pip
   - pip:
     - mlflow==3.10.1
     - Flask
     - python-dotenv
     - psutil
+    - datasets
+    - evaluate
+    - accelerate
+    - transformers

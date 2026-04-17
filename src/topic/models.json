@@ -1,8 +1,8 @@
 [
     {
-        "name": "FacebookAI/xlm-roberta-base",
+        "name": "huawei-noah/TinyBERT_General_4L_312D",
         "hyperparams": {
-            "lr": 2e-5,
+            "lr": 4e-5,
             "train_batch_size": 32,
             "eval_batch_size": 64,
             "epochs": 5,
@@ -10,9 +10,9 @@
         }
     },
     {
-        "name": "huawei-noah/TinyBERT_General_4L_312D",
+        "name": "ProsusAI/finbert",
         "hyperparams": {
-            "lr": 4e-5,
+            "lr": 2e-5,
             "train_batch_size": 32,
             "eval_batch_size": 64,
             "epochs": 5,
@@ -26,16 +26,6 @@
             "train_batch_size": 32,
             "eval_batch_size": 64,
             "epochs": 5,
-            "weight_decay": 0.01
-        }
-    },
-    {
-        "name": "FinBERT",
-        "hyperparams": {
-            "lr": 2e-5,
-            "train_batch_size": 32,
-            "eval_batch_size": 64,
-            "epochs": 3,
             "weight_decay": 0.01
         }
     }

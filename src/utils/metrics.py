@@ -115,7 +115,7 @@ def metrics():
             "pr_auc_micro": pr_auc_micro,
             "pr_auc_weighted": pr_auc_weighted,
             "ece": ece,
-            "cm": cm
+            "cm": cm.tolist()
         }
 
     return compute_metrics

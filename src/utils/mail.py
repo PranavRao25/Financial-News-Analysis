@@ -20,9 +20,9 @@ configs = yaml.full_load(expanded_yaml)
 
 port = configs["monitoring"]["port"]["alert"]
 
-SENDER_EMAIL = configs["mail"]["sender_mail"]
-RECEIVER_EMAIL = configs["mail"]["receiver_mail"]
-MAIL_PASSWORD = configs["mail"]["password"]
+SENDER_EMAIL = configs["mail_alerts"]["sender_mail"]
+RECEIVER_EMAIL = configs["mail_alerts"]["receiver_mail"]
+MAIL_PASSWORD = configs["mail_alerts"]["password"]
 
 def send_mail(subject, body):
     try:

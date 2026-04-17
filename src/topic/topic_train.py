@@ -6,6 +6,7 @@ import mlflow.transformers as mpt
 import matplotlib.pyplot as plt
 import json
 import importlib.util
+import numpy as np
 import torch
 import torch.ao.quantization as quant
 from mlflow.models import infer_signature
@@ -72,7 +73,8 @@ def train(train_dataset_path, valid_dataset_path, model_path,
     
     print(f"Model {model_id} training start")
     run = mlflow.start_run(run_name=run_name,
-                           description=f"Test the performance of {model_id} for topic modelling"
+                           description=f"Test the performance of {model_id} for topic modelling",
+                           nested=True
                            )
     mlflow.set_tag("Model_id", model_id)
     
@@ -101,6 +103,7 @@ def train(train_dataset_path, valid_dataset_path, model_path,
         model = AutoModelForSequenceClassification.from_pretrained(
             model_id, 
             num_labels=no_classes,
+            ignore_mismatched_sizes=True
             # quantization_config=bnb_config
         ).to(device)
 
@@ -141,25 +144,26 @@ def train(train_dataset_path, valid_dataset_path, model_path,
         # quant.prepare_qat(model, inplace=True)
 
         results = trainer.evaluate()
-        mlflow.log_metrics(results)
+        cm = np.array(results.pop("eval_cm"))
 
         # LOG CONFUSION MATRIX
-        cm = results["cm"]
-        cm_path = parent / configs["model"]["output"] / "confusion_matrix.png"
+        cm_path = parent / configs["topic"]["model"]["output"] / "confusion_matrix.png"
         plt.imsave(cm_path, cm)
         mlflow.log_artifact(local_path=cm_path, artifact_path="confusion_matrices")
 
+        mlflow.log_metrics(results)
         trainer.save_model(model_path)
 
+        model_name = model_id.replace("/", "_")
         model_info = mpt.log_model(
             transformers_model={"model": model, "tokenizer": tokenizer},
             name="model",
             task="text-classification",
-            registered_model_name=f"Topic_Modelling_{model_id.replace("/", "_")}"
+            registered_model_name=f"Topic_Modelling_{model_name}"
         )
         client = MlflowClient()
         client.transition_model_version_stage(
-            name=f"Topic_Modelling_{model_id.replace("/", "_")}",
+            name=f"Topic_Modelling_{model_name}",
             version=str(model_info.registered_model_version),
             stage="Staging"
         )
@@ -186,9 +190,9 @@ if __name__ == "__main__":
         configs = yaml.full_load(f)
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--lr", type=float, default=configs["model"]["hyperparams"]["lr"])
-    parser.add_argument("--epochs", type=int, default=configs["model"]["hyperparams"]["epochs"])
-    parser.add_argument("--wgt_decay", type=float, default=configs["model"]["hyperparams"]["wgt_decay"])
+    parser.add_argument("--lr", type=float, default=configs["topic"]["model"]["hyperparams"]["lr"])
+    parser.add_argument("--epochs", type=int, default=configs["topic"]["model"]["hyperparams"]["epochs"])
+    parser.add_argument("--wgt_decay", type=float, default=configs["topic"]["model"]["hyperparams"]["wgt_decay"])
     args = parser.parse_args()
 
     hyperparams = {
@@ -218,6 +222,8 @@ if __name__ == "__main__":
     # else:
     #     print("Creating new Experiment")
     #     exp_id = mlflow.create_experiment("Topic_Modelling_Model_Comparisons")
+
+    mlflow.end_run()
 
     with mlflow.start_run() as parent_run:
         active_experiment = mlflow.get_experiment(mlflow.active_run().info.experiment_id) # type: ignore
