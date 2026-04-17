@@ -50,9 +50,11 @@ sentiment:
       gradient_accumulation_steps: 8
 
 deployment:
-  port: 8501  # Streamlit
+  port: 8501  # Flask
+  serve: 5001  # MLFlow serve
+  mlflow: 5000
   logs:
-  version:
+  version: "v2"
 
 monitoring:
   url: "localhost"
@@ -60,17 +62,16 @@ monitoring:
     model: 8000 # model logging
     streamlit: 8501 # streamlit
     node: 9100  # node manager
-    alert: 5001 # alert mail server
+    alert: 5002 # alert mail server
     alertmanager: 9093 # manage alerts and silences
     prometheus: 9090 # prometheus server
     grafana: 3000 # grafana dashboard
-    mlflow: 5000  # model experiment tracking
   current_version: "v2"
 
 mail_alerts:
-  sender_mail: "hello@demomailtrap.co"
-  receiver_mail: "icare9004@gmail.com"
-  api: ${MAIL_API}  # from .env file
+  sender_mail: ${EMAIL}
+  receiver_mail: ${EMAIL}
+  password: ${PASSWORD}
 
 post-production:
   logs:

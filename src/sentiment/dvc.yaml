@@ -1,9 +1,9 @@
 stages:
   clean:
     wdir: ../../
-    cmd: python src/sentiment/data_clean.py
+    cmd: python src/sentiment/sent_data_clean.py
     deps:
-      - src/sentiment/data_clean.py
+      - src/sentiment/sent_data_clean.py
       - data/sentiment/raw/data.txt
     params:
       - config.yaml:
@@ -14,9 +14,9 @@ stages:
 
   split:
     wdir: ../../
-    cmd: python src/sentiment/data_split.py
+    cmd: python src/sentiment/sent_data_split.py
     deps:
-      - src/sentiment/data_split.py
+      - src/sentiment/sent_data_split.py
       - data/sentiment/processed/data.csv
     params:
       - config.yaml:
@@ -31,9 +31,9 @@ stages:
 
   tokenize:
     wdir: ../../
-    cmd: python src/sentiment/data_tokenize.py
+    cmd: python src/sentiment/sent_data_tokenize.py
     deps:
-      - src/sentiment/data_tokenize.py
+      - src/sentiment/sent_data_tokenize.py
       - data/sentiment/processed/train.csv
       - data/sentiment/processed/valid.csv
       - data/sentiment/processed/test.csv

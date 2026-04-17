@@ -1,4 +1,6 @@
 import csv
+import argparse
+import matplotlib.pyplot as plt
 import pandas as pd
 import json
 import yaml
@@ -9,9 +11,12 @@ import numpy as np
 import datetime
 import os
 import torch
+import torch.nn as nn
+import torch.optim as optim
+import torch
+import mlflow
 import mlflow.transformers as mpt
 import importlib.util
-import mlflow
 from mlflow.models import infer_signature
 from mlflow.tracking import MlflowClient
 from datasets import load_dataset, load_from_disk
@@ -35,6 +40,13 @@ assert spec is not None
 mod = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(mod) # type: ignore
 
+path = "src/utils/metrics.py"
+mname = "metrics"
+spec = importlib.util.spec_from_file_location(mname, path)
+assert spec is not None
+metrics = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(metrics) # type: ignore
+
 parent = Path(__file__).resolve().parent.parent.parent
 db = parent  / "mlflow.db"
 mlflow.set_tracking_uri(f"sqlite:///{db}")
@@ -56,24 +68,12 @@ def failure_mail(run_name, exp_name, model_id, e):
     """
     mod.send_mail(subject, body)
 
-def train(train_dataset_path, valid_dataset_path, model_path, model_id, no_classes, exp, hyperparams):
+def train(train_dataset_path, valid_dataset_path, model_path, model_id,
+          no_classes, exp_name, run_name, hyperparams, device):
     print(f"Model {model_id} training start")
-    run = mlflow.start_run(experiment_id=exp.experiment_id, run_name=model_id, 
+    run = mlflow.start_run(run_name=run_name,
                            description=f"Test the performance of {model_id} for topic modelling")
     mlflow.set_tag("Model_id", model_id)
-
-    def compute_metrics(eval_pred):
-        logits, labels = eval_pred
-        predictions = np.argmax(logits, axis=-1)
-        
-        acc = accuracy_metric.compute(predictions=predictions, references=labels)
-        f1 = f1_metric.compute(predictions=predictions, references=labels,
-                               average="macro")
-        
-        return {"accuracy": acc["accuracy"], "f1_macro": f1["f1"]} # type: ignore
-
-    accuracy_metric = evaluate.load("accuracy")  # TODO: CHANGE THE METRIC
-    f1_metric = evaluate.load("f1")
     
     # PREPARE THE DATASET
     train_dataset = load_from_disk(str(train_dataset_path))
@@ -86,6 +86,7 @@ def train(train_dataset_path, valid_dataset_path, model_path, model_id, no_class
     epochs = hyperparams.get("epochs", 10)
     weight_decay = float(hyperparams.get("weight_decay", 0.01))
     gradient_accumulation_steps = int(hyperparams.get("gradient_accumulation_steps", 8))
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     print(f"No of Epochs: {epochs}")
     mlflow.log_params(hyperparams)
@@ -96,7 +97,9 @@ def train(train_dataset_path, valid_dataset_path, model_path, model_id, no_class
         model = AutoModelForSequenceClassification.from_pretrained(
             model_id, 
             num_labels=no_classes
-        )
+        ).to(device)
+
+        model.train()
 
         training_args = TrainingArguments(
             output_dir=model_path,
@@ -114,7 +117,8 @@ def train(train_dataset_path, valid_dataset_path, model_path, model_id, no_class
             logging_steps=50,
             load_best_model_at_end=True,
             fp16=torch.cuda.is_available(),   # Mixed precision training for speed
-            report_to="none"
+            report_to="mlflow",
+            run_name=run_name
         )
 
         trainer = Trainer(
@@ -131,6 +135,12 @@ def train(train_dataset_path, valid_dataset_path, model_path, model_id, no_class
 
         results = trainer.evaluate()
         mlflow.log_metrics(results)
+
+        # LOG CONFUSION MATRIX
+        cm = results["cm"]
+        cm_path = parent / configs["model"]["output"] / "confusion_matrix.png"
+        plt.imsave(cm_path, cm)
+        mlflow.log_artifact(local_path=cm_path, artifact_path="confusion_matrices")
 
         trainer.save_model(model_path)
 
@@ -150,11 +160,12 @@ def train(train_dataset_path, valid_dataset_path, model_path, model_id, no_class
             stage="Staging"
         )
         print("Training Done")
-        successful_mail(run.info.run_name, exp.name, model_id, results)
+        successful_mail(run.info.run_name, exp_name, model_id, results)
     except Exception as e:
-        failure_mail(run.info.run_name, exp.name, model_id, e)
+        failure_mail(run.info.run_name, exp_name, model_id, e)
         raise e
     finally:
+        print("TRAINING DONE - MLFLOW ENDING")
         mlflow.end_run()
 
 if __name__ == "__main__":
@@ -169,6 +180,18 @@ if __name__ == "__main__":
 
     with open(parent / "config.yaml", "r") as f:
         configs = yaml.full_load(f)
+    
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--lr", type=float, default=configs["model"]["hyperparams"]["lr"])
+    parser.add_argument("--epochs", type=int, default=configs["model"]["hyperparams"]["epochs"])
+    parser.add_argument("--wgt_decay", type=float, default=configs["model"]["hyperparams"]["wgt_decay"])
+    args = parser.parse_args()
+
+    hyperparams = {
+        "lr": args.lr,
+        "epochs": args.epochs,
+        "wgt_decay": args.wgt_decay
+    }
 
     root = configs["sentiment"]["data"]
     no_classes = root["no_classes"]
@@ -177,24 +200,33 @@ if __name__ == "__main__":
 
     model_details = configs["sentiment"]["model"]
     model_path = model_details["path"]
+    model_id = model_details["name"]
+    device = model_details["device"]
 
     with open(parent / "src/sentiment/sent_models.json", "r") as f:
         models = json.load(f)
 
-    experiment = mlflow.get_experiment_by_name("Sentiment_Analysis_Model_Comparisons")
-    if experiment:
-        print("Experiment exists")
-        exp_id = experiment.experiment_id
-    else:
-        print("Creating new Experiment")
-        exp_id = mlflow.create_experiment("Sentiment_Analysis_Model_Comparisons")
-    try:
-        exp = mlflow.set_experiment(experiment_id=exp_id)
-        for model in models:
-            model_id, hyperparams = model["name"], model["hyperparams"]
-            train(train_dataset_path, valid_dataset_path, model_path, model_id, no_classes, exp, hyperparams)
-    except Exception as e:
-        print(e)
-        raise e
-    finally:
-        logger.debug("MODEL TRAIN PASS")
+    # experiment = mlflow.get_experiment_by_name("Sentiment_Analysis_Model_Comparisons")
+    # if experiment:
+    #     print("Experiment exists")
+    #     exp_id = experiment.experiment_id
+    # else:
+    #     print("Creating new Experiment")
+    #     exp_id = mlflow.create_experiment("Sentiment_Analysis_Model_Comparisons")
+
+    with mlflow.start_run() as parent_run:
+        active_experiment = mlflow.get_experiment(mlflow.active_run().info.experiment_id) # type: ignore
+        exp_name = active_experiment.name
+        try:
+            # exp = mlflow.set_experiment(experiment_id=exp_id)
+
+            for model in models:
+                model_id, hyperparams = model["name"], model["hyperparams"]
+                run_name = f"Sentiment_Train_{model_id}_{hyperparams}"
+                train(train_dataset_path, valid_dataset_path, model_path,
+                      model_id, no_classes, exp_name, run_name, hyperparams, device)
+        except Exception as e:
+            print(e)
+            raise e
+        finally:
+            logger.debug("MODEL TRAIN PASS")
