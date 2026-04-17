@@ -1,0 +1,22 @@
+name: proj_env
+channels:
+  - pytorch
+  - defaults
+dependencies:
+  - python=3.11
+  - pytorch
+  - torchvision
+  - scikit-learn
+  - pandas
+  - pyyaml
+  - keras
+  - tensorflow
+  - tqdm
+  - pillow
+  - transformers
+  - pip
+  - pip:
+    - mlflow==3.10.1
+    - Flask
+    - python-dotenv
+    - psutil

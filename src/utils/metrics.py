@@ -1,7 +1,7 @@
 import evaluate
 import numpy as np
 from scipy.special import softmax
-from sklearn.metrics import average_precision_score
+from sklearn.metrics import average_precision_score, confusion_matrix
 
 _F1_METRIC = evaluate.load("f1")  # TODO: CHANGE THE METRIC
 _ACCURACY_METRIC = evaluate.load("accuracy")
@@ -97,6 +97,8 @@ def metrics():
             average="weighted"
         )
 
+        cm = confusion_matrix(labels, predictions)
+
         return {
             "accuracy": accuracy["accuracy"], # type: ignore
             "micro_f1": micro_f1["f1"], # type: ignore
@@ -112,7 +114,8 @@ def metrics():
             "pr_auc_macro": pr_auc_macro,
             "pr_auc_micro": pr_auc_micro,
             "pr_auc_weighted": pr_auc_weighted,
-            "ece": ece
+            "ece": ece,
+            "cm": cm
         }
 
     return compute_metrics

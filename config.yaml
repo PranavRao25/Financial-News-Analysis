@@ -17,6 +17,7 @@ topic:
     device: "cuda"
     name: "huawei-noah/TinyBERT_General_4L_312D"
     path: "models/topic/v1"
+    output: "output/v1"
     version: "v1"
     hyperparams:
       lr: 3e-5
@@ -52,6 +53,8 @@ sentiment:
 
 deployment:
   port: 6969  # Flask
+  serve: 5001  # mlflow serve
+  mlflow: 5000
   logs:
   version: "v2"
 
@@ -60,16 +63,16 @@ monitoring:
     model: 8001 # model logging
     streamlit: 8501 # streamlit
     node: 9100  # node manager
-    alert: 5001 # alert mail server
+    alert: 5002 # alert mail server
     alertmanager: 9093 # manage alerts and silences
     prometheus: 9090 # prometheus server
     grafana: 3000 # grafana dashboard
   current_version: "v2"
 
 mail_alerts:
-  sender_mail: "hello@demomailtrap.co"
-  receiver_mail: "icare9004@gmail.com"
-  api: ${MAIL_API}  # from .env file
+  sender_mail: ${EMAIL}
+  receiver_mail: ${EMAIL}
+  password: ${PASSWORD}
 
 post-production:
   logs:

@@ -1,0 +1,16 @@
+name: Financial_News_Analysis
+conda_env: conda.yaml
+
+entry_points:
+  prep_data:
+    command: "python3 src/topic/topic_data_prep.py"
+  tokenize_data:
+    command: "python3 src/topic/topic_data_tokenize.py"
+  mail:
+    command: "python3 src/utils/mail.py"
+  main:
+    parameters:
+      lr: {type: float, default: 0.0001}
+      epochs: {type: int, default: 1}
+      wgt_decay: {type: float, default: 0.01}
+    command: "python3 src/topic/train.py --lr {lr} --epochs {epochs} --wgt_decay {wgt_decay}"
