@@ -47,20 +47,20 @@ stages:
       - data/sentiment/processed/valid
       - data/sentiment/processed/test
 
-  train:
-    wdir: ../../
-    cmd: python src/sentiment/sent_train.py
-    deps:
-      - src/sentiment/sent_train.py
-      - data/sentiment/processed/train
-      - data/sentiment/processed/valid
-      - src/sentiment/sent_models.json
-    params:
-      - config.yaml:
-        - sentiment.data.processed
-        - sentiment.data.no_classes
-        - sentiment.model.name
-        - sentiment.model.path
-    outs:
-      - models/sentiment/v1
+  # train:
+  #   wdir: ../../
+  #   cmd: python src/sentiment/sent_train.py
+  #   deps:
+  #     - src/sentiment/sent_train.py
+  #     - data/sentiment/processed/train
+  #     - data/sentiment/processed/valid
+  #     - src/sentiment/sent_models.json
+  #   params:
+  #     - config.yaml:
+  #       - sentiment.data.processed
+  #       - sentiment.data.no_classes
+  #       - sentiment.model.name
+  #       - sentiment.model.path
+  #   outs:
+  #     - models/sentiment/v1
       

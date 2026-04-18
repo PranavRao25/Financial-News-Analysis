@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Financial News Analysis</title>
+    <style>
+        body { font-family: system-ui, sans-serif; max-width: 800px; margin: 2rem auto; padding: 0 1rem; }
+        .result-block { margin-top: 2rem; padding: 1rem; border: 1px solid #ccc; border-radius: 4px; background: #f9f9f9; }
+        pre { white-space: pre-wrap; word-wrap: break-word; background: #eee; padding: 1rem; }
+        #loading { display: none; color: #0066cc; font-weight: bold; margin-top: 1rem; }
+    </style>
+</head>
+<body>
+    <h2>Document Inference Setup</h2>
+
+    <p>Sentiment Analysis model - {{sent_model}}</p>
+    <p>Topic Modelling model - {{topic_model}}</p>
+    
+    <form id="uploadForm">
+        <input type="file" id="fileInput" name="file" required accept=".txt,.pdf,.png,.jpg,.jpeg">
+        <button type="submit">Run Inference</button>
+    </form>
+    
+    <div id="loading">Running inference pipeline...</div>
+    <div id="resultBox"></div>
+
+    <script>
+        document.getElementById('uploadForm').onsubmit = async (e) => {
+            e.preventDefault(); // Stop the browser from reloading the page
+            
+            const fileInput = document.getElementById('fileInput');
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+
+            // Toggle UI states
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('resultBox').innerHTML = '';
+
+            try {
+                const response = await fetch('/', { 
+                    method: 'POST', 
+                    body: formData 
+                });
+                
+                const data = await response.json();
+                document.getElementById('loading').style.display = 'none';
+
+                if (response.ok) {
+                    // Dynamically inject the JSON response into the DOM
+                    document.getElementById('resultBox').innerHTML = `
+                        <div class="result-block">
+                            <h3>Inference Results</h3>
+                            <p><strong>Sentiment:</strong> ${data.sentiment.label} (Conf: ${data.sentiment.confidence.toFixed(4)})</p>
+                            <p><strong>Topic:</strong> ${data.topic.label} (Conf: ${data.topic.confidence.toFixed(4)})</p>
+                            <h4>Extracted Text Context:</h4>
+                            <pre>${data.text}</pre>
+                        </div>
+                    `;
+                } else {
+                    document.getElementById('resultBox').innerHTML = `<p style="color:red;">Server Error: ${data.message}</p>`;
+                }
+            } catch (err) {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('resultBox').innerHTML = `<p style="color:red;">Network or CORS Error occurred.</p>`;
+            }
+        };
+    </script>
+</body>
+</html>

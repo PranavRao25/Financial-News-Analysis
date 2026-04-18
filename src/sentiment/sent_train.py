@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import json
 import yaml
+import numpy as np
 import logging
 from pathlib import Path
 import evaluate
@@ -72,8 +73,12 @@ def train(train_dataset_path, valid_dataset_path, model_path, model_id,
           no_classes, exp_name, run_name, hyperparams, device):
     print(f"Model {model_id} training start")
     run = mlflow.start_run(run_name=run_name,
-                           description=f"Test the performance of {model_id} for topic modelling")
+                           description=f"Test the performance of {model_id} for topic modelling",
+                           nested=True
+                           )
     mlflow.set_tag("Model_id", model_id)
+    
+    compute_metrics = metrics.metrics()
     
     # PREPARE THE DATASET
     train_dataset = load_from_disk(str(train_dataset_path))
@@ -134,28 +139,29 @@ def train(train_dataset_path, valid_dataset_path, model_path, model_id,
         trainer.train()
 
         results = trainer.evaluate()
-        mlflow.log_metrics(results)
-
+        
         # LOG CONFUSION MATRIX
-        cm = results["cm"]
-        cm_path = parent / configs["model"]["output"] / "confusion_matrix.png"
+        cm = results.pop("eval_cm")
+        cm_path = parent / configs["sentiment"]["model"]["output"] / "confusion_matrix.png"
         plt.imsave(cm_path, cm)
         mlflow.log_artifact(local_path=cm_path, artifact_path="confusion_matrices")
 
+        mlflow.log_metrics(results)
         trainer.save_model(model_path)
 
         # param_counts = sum(p.numel() for p in model.parameters() if p.requires_grad)
         # mlflow.log_param("param_count", param_counts)
 
+        model_name = model_id.replace("/", "_")
         model_info = mpt.log_model(
             transformers_model={"model": model, "tokenizer": tokenizer},
             name="model",
             task="text-classification",
-            registered_model_name=f"Financial_Sentiment_{model_id.replace("/", "_")}"
+            registered_model_name=f"Financial_Sentiment_{model_name}"
         )
         client = MlflowClient()
         client.transition_model_version_stage(
-            name=f"Financial_Sentiment_{model_id.replace("/", "_")}",
+            name=f"Financial_Sentiment_{model_name}",
             version=str(model_info.registered_model_version),
             stage="Staging"
         )
@@ -182,9 +188,9 @@ if __name__ == "__main__":
         configs = yaml.full_load(f)
     
     parser = argparse.ArgumentParser()
-    parser.add_argument("--lr", type=float, default=configs["model"]["hyperparams"]["lr"])
-    parser.add_argument("--epochs", type=int, default=configs["model"]["hyperparams"]["epochs"])
-    parser.add_argument("--wgt_decay", type=float, default=configs["model"]["hyperparams"]["wgt_decay"])
+    parser.add_argument("--lr", type=float, default=configs["sentiment"]["model"]["hyperparams"]["lr"])
+    parser.add_argument("--epochs", type=int, default=configs["sentiment"]["model"]["hyperparams"]["epochs"])
+    parser.add_argument("--wgt_decay", type=float, default=configs["sentiment"]["model"]["hyperparams"]["wgt_decay"])
     args = parser.parse_args()
 
     hyperparams = {
@@ -214,6 +220,9 @@ if __name__ == "__main__":
     #     print("Creating new Experiment")
     #     exp_id = mlflow.create_experiment("Sentiment_Analysis_Model_Comparisons")
 
+    exp_name = "Sentiment_Analysis_Model_Comparisons"
+
+    mlflow.end_run()
     with mlflow.start_run() as parent_run:
         active_experiment = mlflow.get_experiment(mlflow.active_run().info.experiment_id) # type: ignore
         exp_name = active_experiment.name

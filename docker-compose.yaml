@@ -6,9 +6,9 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: financial_model_server
-    command: python3 run src/app.py --server.port=6969 --server.address=0.0.0.0
+    command: python3 run src/app.py --server.port=8501 --server.address=0.0.0.0
     ports:
-      - 6969:6969
+      - 8501:8501
       - 8000:8000
     volumes:
       - ./models:/app/models
@@ -25,7 +25,6 @@ services:
               capabilities: [gpu]
         limits:
           memory: 8G
-  
   alert_server:
     build:
       context: .
@@ -33,7 +32,7 @@ services:
     container_name: financial_alert_api
     command: python3 run src/mail.py
     ports:
-      - 5001:5001
+      - 5002:5002
     volumes:
       - /config.yaml:/app/config.yaml
     env_file:
@@ -49,7 +48,6 @@ services:
       - "--config.file=/etc/prometheus/prometheus.yml"
     depends_on:
       - model_server
-  
   grafana:
     image: grafana/grafana:latest
     container_name: grafana_dashboard
@@ -59,4 +57,14 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=admin
     depends_on:
       - prometheus
-  
+  mlflow_ui:
+    command: mlflow server --backend-store-uri sqlite:///./mlflow.db --default-artifact-root ./models --host 0.0.0.0 --port 5000
+    volumes:
+      - ./models:/app/models
+      - ./data:/app/data
+      - /config.yaml:/app/config.yaml
+      - /mlflow.db:/app/mlflow.db
+  mlflow_serve:
+    command: mlflow models serve -m "runs:/<run_name>/model" -p 5001 --env-manager local
+    volumes:
+      - ./mlruns:/app/mlruns

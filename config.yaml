@@ -40,18 +40,21 @@ sentiment:
   model:
     name: "distilbert-base-uncased"
     path: "models/sentiment/v1"
+    output: "output/v1"
     version: "v1"
+    device: "cuda"
     hyperparams:
       lr: 2e-5
       train_batch_size: 32
       eval_batch_size: 64
       epochs: 1
-      weight_decay: 0.01
+      wgt_decay: 0.01
       gradient_accumulation_steps: 8
 
 deployment:
   port: 8501  # Flask
-  serve: 5001  # MLFlow serve
+  sent_serve: 5001  # MLFlow serve for Sentiment Analysis
+  topic_serve: 5003  # MLFlow serve for Topic Modelling
   mlflow: 5000
   logs:
   version: "v2"

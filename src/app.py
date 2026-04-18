@@ -3,8 +3,7 @@ from flask import Flask, request, render_template, jsonify, flash, redirect, url
 from prometheus_client import start_http_server, Counter, Gauge, Histogram, Info, Summary
 from werkzeug.utils import secure_filename
 import os
-from topic.topic_inference import TopicModel
-from sentiment.sent_inference import SentimentModel
+import requests
 import json
 from uuid import uuid4
 import io
@@ -62,15 +61,18 @@ def get_metrics():
         )
     }
 
-def init_topic_model(path):
+def init_topic_model():
     print("Init topic model")
-    topic = TopicModel(path)
-    return topic
+    serve_port = configs["deployment"]["topic_serve"]
+    MLFLOW_URI = f"http://127.0.0.1:{serve_port}/invocations"
+    return MLFLOW_URI
 
-def init_sentiment_model(path):
+def init_sentiment_model():
     print("Init Sentiment model")
-    sentiment = SentimentModel(path)
-    return sentiment
+    # sentiment = SentimentModel(path)
+    serve_port = configs["deployment"]["sent_serve"]
+    MLFLOW_URI = f"http://127.0.0.1:{serve_port}/invocations"
+    return MLFLOW_URI
 
 def analyse(file, ext):
     if ext in {"jpg", "jpeg", "png"}:
@@ -86,20 +88,33 @@ def analyse(file, ext):
     if not txt.strip():  # text empty
         raise ValueError("Text empty")
     
-    sent_label, sent_conf = infer(txt, "sentiment", sent_model_name, sentiment, sent_mapping)
-    topic_label, topic_conf = infer(txt, "topic", topic_model_name, topic, topic_mapping)
+    sent_label, sent_conf = infer(txt, "sentiment", sent_model_name, sent_uri, sent_mapping)
+    topic_label, topic_conf = infer(txt, "topic", topic_model_name, topic_uri, topic_mapping)
 
     return {
-        "sentiment": {"label": sent_label, "confidence": sent_conf},
-        "topic": {"label": topic_label, "confidence": topic_conf},
+        "sentiment": {"label": sent_label, "confidence": sent_conf, "model": sent_model_name},
+        "topic": {"label": topic_label, "confidence": topic_conf, "model": topic_model_name},
         "text": txt
     }
 
-def infer(txt, mode, model_name, model, mapping):
+def infer(txt, mode, model_name, uri, mapping):
     metrics["requests"].labels(mode=mode).inc() # type: ignore
+
+    label = "Unknown"
+    confidence = 0.0
+
     try:
         with metrics["inference_latency"].labels(mode=mode, model_type=model_name).time(): # type: ignore
-            results = model.predict([txt])
+            payload = {"inputs": [txt]}
+            headers = {"Content-Type": "application/json"}
+
+            response = requests.post(uri, json=payload, headers=headers)
+
+            if response.status_code != 200:
+                raise Exception(f"MLFlow API Error {response.status_code}: {response.text}")
+
+            results = response.json().get("predictions", response.json())
+
             for item in results:
                 label = str(mapping[str(item["predicted_class"])])
                 confidence = item["confidence"]
@@ -108,6 +123,7 @@ def infer(txt, mode, model_name, model, mapping):
         # st.error(f"Error in processing : {error_name}")
         # st.write(metrics)
         # st.write(mode)
+        logging.error(f"Error during {mode} inference: {e}")
         metrics["errors"].labels(mode=mode, error_types=error_name).inc() # type: ignore
     finally:
         metrics["active_requests"].labels(session_id=session_id).dec() # type: ignore
@@ -129,11 +145,11 @@ metrics["model_memory_usage"].set(process.memory_info().rss) # type: ignore
 
 topic_model_name = configs["topic"]["model"]["name"]
 topic_model_path = configs["topic"]["model"]["path"]
-topic = init_topic_model(parent / topic_model_path)
+topic_uri = init_topic_model()
 
 sent_model_name = configs["sentiment"]["model"]["name"]
 sent_model_path = configs["sentiment"]["model"]["path"]
-sentiment = init_sentiment_model(parent / sent_model_path)
+sent_uri = init_sentiment_model()
 
 port = configs["deployment"]["port"]
 # st.write(f"Model used for Sentiment Analysis - {sent_model_name}")
@@ -176,24 +192,11 @@ def root():
                 return jsonify({"message": f"Cannot analyse file ; {e}"}), 500
         else:
             return jsonify({"message": "No selected file"}), 400
-        # for f in file:
-        #     if f and f.filename:
-        #         filename = secure_filename(f.filename)
-        #         ext = filename.split('.')[-1]
-        #         if ext not in ALLOWED_EXTENSIONS:
-        #             return jsonify({"message": "File type not allowed"}), 400
-                
-        #         try:
-        #             output = analyse(file, ext)
-        #             return output, 200
-        #         except Exception as e:
-        #             logging.error(f"{e}")
-        #             return jsonify({"message": f"Cannot analyse file ; {e}"}), 500
-        #     else:
-        #         return jsonify({"message": "No selected file"}), 400
     else:
-        return render_template("index.html")
-        
+        return render_template("index.html",
+                               sent_model=sent_model_name,
+                               topic_model=topic_model_name)
+
 # @app.route("/health", methods=["GET", "POST"])
 # def health():
 #     pass
