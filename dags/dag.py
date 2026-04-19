@@ -4,6 +4,7 @@ from airflow.sensors.filesystem import FileSensor
 from airflow.utils.email import send_email
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.decorators import task
+from airflow.operators.python import PythonOperator
 import pandas as pd
 import requests
 from bs4 import BeautifulSoup
@@ -51,157 +52,58 @@ def alert_dry_pipeline(context):
         print(f"Failed to send mail {e}")
 
 with DAG(
-    dag_id="web_scraper_pipeline",
+    dag_id="news_analysis_pipeline",
     default_args=default_args,
-    description="Automated Web-to-DB Pipeline",
-    schedule=timedelta(minutes=2),
-    start_date=datetime(2026, 4, 18),
+    description="Automated News Analysis Pipeline",
+    schedule=None,
+    start_date=datetime(2026, 4, 19),
+    tags=["retrain"],
     catchup=False) as dag:
 
-    @task
-    def extract_urls_from_csv(folder_path: str) -> list[str]:
-        """
-            Read the csv files and extract and clean the urls
-        """
+    def extract_alert_context(**kwargs):
+        dag_run = kwargs["dag_run"]
+        model_name = kwargs["model_name"]
+        payload = dag_run.conf
 
-        urls = []
-        files = Path(folder_path).glob("*.csv")
-        url_pattern = r'(https?://[^\s,"]+|www\.[^\s,"]+|[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})'
+        if not payload or "alerts" not in payload:
+            return {"model": "model_name", "method": "manual"}
         
-        for file in files:
-            df = pd.read_csv(file)
-            values = df.values.flatten()  # get the single column of urls
-            for val in values:
-                if pd.notna(val):
-                    matches = re.findall(url_pattern, str(val))  # regex match
-                    urls.extend(matches)
-        for url in urls:
-            if not url.startswith(("http://", "https://")):  # cleaning
-                url = "https://" + url
-        urls = list(set(urls))  # unique urls
-        return urls
+        alerts = payload.get("alerts")
+        for alert in alerts:
+            if alert["status"] == "firing":
+                return {"model": model_name, "drift": alert.get("annotations", {}).get("description")}                
     
-    @task(pool="scraper_pool", retries=3, retry_exponential_backoff=True)
-    def scrape_target_urls(url: str):
-        """
-            Visit the urls to collect images
-        """
-
-        output = {}
-        receipent_mail = os.getenv("SMTP_USER", "pranavrao2500@gmail.com")
-        try:
-            headers = {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-            }
-            response = requests.get(url, timeout=10, headers=headers)
-            response.raise_for_status()
-            
-            if response.status_code != 200:  # url visit failed
-                subject = f"Scraping : Link Failure Alert {response.status_code}"
-                html_content = f"<p>The following URL scraping failed:</p><p><b>{url}</b></p>"
-                send_email(to=receipent_mail, subject=subject, html_content=html_content)
-                return output
-            
-            soup = BeautifulSoup(response.text, "html.parser")
-            images = [img.get("src") for img in soup.find_all("img") if img.get("src")]
-            output = {"url": url, "links": images}
-            return output
-        except Exception as e:
-            print(f"Exception {e}")
-            subject = f"Scraping : Exception {e}"
-            html_content = f"<p>The following URL scraping failed:</p><p><b>{url}</b></p>"
-            send_email(to=receipent_mail, subject=subject, html_content=html_content)
-            raise
+    # @task(pool="scraper_pool", retries=3, retry_exponential_backoff=True)
     
-    @task
-    def create_database():
-        """
-            Create Postgres Database
-        """
+    def fetch_new_ground_truth(**kwargs):
+        pass
+    
+    def train_model(**kwargs):
+        pass
 
-        create_query = """
-            CREATE TABLE IF NOT EXISTS images (
-            url VARCHAR UNIQUE,
-            image TEXT
-            )
-        """
-
-        pg_hook = PostgresHook(postgres_conn_id="postgres_default")
-        with pg_hook.get_conn() as conn:
-            with conn.cursor() as cursor:
-                cursor.execute(create_query)
-            conn.commit()
-
-    @task
-    def persist_data(scraped_batch: list[dict]):
-        """
-            Add new urls into database
-        """
-
-        pg_hook = PostgresHook(postgres_conn_id="postgres_default")
-
-        insert_query = """
-            INSERT INTO images (url, image)
-            VALUES (%s, %s)
-            ON CONFLICT (url) DO NOTHING
-        """
-
-        new_insert_counts = 0
-        total_records = len(scraped_batch)
-
-        with pg_hook.get_conn() as conn:
-            with conn.cursor() as cursor:
-                for record in scraped_batch:
-                    if not record:
-                        continue
-
-                    cursor.execute(
-                        insert_query,
-                        (record["url"], str(record["links"]))
-                    )
-
-                    new_insert_counts += cursor.rowcount
-            conn.commit()
-        
-        select_query = """
-        SELECT COUNT(image) FROM images GROUP BY url
-        """
-
-        with pg_hook.get_conn() as conn:
-            with conn.cursor() as cursor:
-                cursor.execute(select_query)
-                dist = cursor.fetchall()
-            conn.commit()
-        
-        threshold = 5  # send mail on every 5 new additions
-        receipent_mail = os.getenv("SMTP_USER", "pranavrao2500@gmail.com")
-        if new_insert_counts >= threshold:
-            subject = f"{new_insert_counts} New Pages Processed"
-            html_content = f"""
-            <h3>Batch Collection Complete</h3>
-            <p>Inserted <b>{new_insert_counts}</b> new pages into the database.</p>
-            <p>Total URLs attempted in this batch: {total_records}</p>
-            <p>Distribution of images: {dist}</p>
-            """
-            send_email(to=receipent_mail, subject=subject, html_content=html_content)
-            print(f"Batch notification sent for {new_insert_counts} records.")
-
-    # FILE SENSOR
-    watch_for_target_list = FileSensor(
-        task_id="watch_for_image_file",
-        fs_conn_id="image_folder_conn",
-        filepath="*.png",
-        poke_interval=30,
-        timeout=60,
-        mode="reschedule",
-        on_failure_callback=alert_dry_pipeline,
-        soft_fail=False
+    def evaluate(**kwargs):
+        pass
+    
+    parse_alerts = PythonOperator(
+        task_id="parse_alert_context",
+        python_callable=extract_alert_context,
+        provide_context=True
     )
     
-    create = create_database()
-    url_list = extract_urls_from_csv("/opt/airflow/data/")
-    scraped_data = scrape_target_urls.expand(url=url_list)
-    done = persist_data(scraped_data)
+    fetch_data = PythonOperator(
+        task_id="fetch_data",
+        python_callable=fetch_new_ground_truth
+    )
 
-    # DEFINE THE DEPENDENCIES
-    watch_for_target_list >> create >> url_list >> scraped_data >> done
+
+    train = PythonOperator(
+        task_id="train_model",
+        python_callable=train_model
+    )
+
+    eval = PythonOperator(
+        task_id="evaluate",
+        python_callable=evaluate
+    )
+
+    parse_alerts >> fetch_data >> train >> eval

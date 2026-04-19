@@ -19,7 +19,7 @@ groups:
         summary: "Host ML Inference Latency"
         description: "Model Inference time is {{ $value }}%"
     
-    - alert: ApplicationDown  # Streamlit error
+    - alert: ApplicationDown  # Flask error
       expr: up{job="image_captioning"} == 0
       for: 10s
       labels:
@@ -37,3 +37,29 @@ groups:
         summary: "High Error Rate"
         description: "Application experiencing HTTP Error Rate > 1%"
     
+    - alert: SpecificModelDown
+      expr: (sum by (model_name) (rate(model_inference_status_total{status!="success"}[5m]))/sum by (model_name) (rate(model_inference_status_total[5m]))) > 0.7
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Model unreliable"
+        description: "Model is misbehaving with error rate {{value}}%"
+
+    - alert: SevereDataDriftTopic
+      expr: sum((( (sum by (class_name) (rate(topic_model_input_classes_total[1h])) / scalar(sum(rate(topic_model_input_classes_total[1h])))) + 1e-5 )- ( model_baseline_class_dist + 1e-5 )) * ln(( (sum by (class_name) (rate(topic_model_input_classes_total[1h])) / scalar(sum(rate(topic_model_input_classes_total[1h])))) + 1e-5 )/ ( model_baseline_class_dist + 1e-5 ))) > 0.2
+      for: 1h
+      labels:
+        severity: critical
+      annotations:
+        summary: "Data Drift detected in Topic Modelling"
+        description: "Data distribution has drifted beyond the threshold. Re-training needed"
+
+    - alert: SevereDataDriftSent
+      expr: sum((( (sum by (class_name) (rate(sent_model_input_classes_total[1h])) / scalar(sum(rate(sent_model_input_classes_total[1h])))) + 1e-5 )- ( model_baseline_class_distribution + 1e-5 )) * ln(( (sum by (class_name) (rate(topic_model_input_classes_total[1h])) / scalar(sum(rate(topic_model_input_classes_total[1h])))) + 1e-5 )/ ( sent_model_baseline_data_dist + 1e-5 ))) > 0.2
+      for: 1h
+      labels:
+        severity: critical
+      annotations:
+        summary: "Data Drift detected in Sentiment Analysis"
+        description: "Data distribution has drifted beyond the threshold. Re-training needed - {{ value }}"

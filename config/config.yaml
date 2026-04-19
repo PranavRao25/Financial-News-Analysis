@@ -9,6 +9,7 @@ topic:
     production: "data/topic/production"
     version: "v3"
     mapping: "data/topic/mapping.json"
+    dist: "data/topic/dist.csv"
     train_valid_split: 0.25
     random_state : 42
     embed_len: 128
@@ -67,6 +68,7 @@ monitoring:
     alertmanager: 9093 # manage alerts and silences
     prometheus: 9090 # prometheus server
     grafana: 3000 # grafana dashboard
+    redis: 6379
   current_version: "v2"
 
 mail_alerts:

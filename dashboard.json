@@ -1,7 +1,7 @@
 {
-  "title": "Financial News Analysis v2",
-  "description": "Dashboard for Streamlit AI application metrics and Hardware metrics",
-  "tags": ["streamlit", "ai", "image"],
+  "title": "Financial News Analysis v3",
+  "description": "Dashboard for Financial News Analysis AI application metrics and Hardware metrics",
+  "tags": ["finance", "ai", "image"],
   "timezone": "browser",
   "refresh": "5s",
   "schemaVersion": 38,
@@ -272,6 +272,349 @@
       "options": {
         "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
         "tooltip": {"mode": "multi"}
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Data Drift",
+      "description": "Rate of Change of Data Distribution seen by the Topic Model",
+      "gridPos": { "h": 6, "w": 10, "x": 14, "y": 0 },
+      "targets": [
+        {
+          "expr": "sum by (class_name) (rate(topic_model_input_classes_total[5m]))",
+          "legendFormat": "{{class_name}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "axisPlacement": "left",
+            "drawStyle": "line",
+            "lineWidth": 2
+          }
+        }
+      },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Data Drift",
+      "description": "Rate of Change of Data Distribution seen by the Sentiment model",
+      "gridPos": { "h": 6, "w": 10, "x": 14, "y": 0 },
+      "targets": [
+        {
+          "expr": "sum by (class_name) (rate(sent_model_input_classes_total[5m]))",
+          "legendFormat": "{{class_name}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "axisPlacement": "left",
+            "drawStyle": "line",
+            "lineWidth": 2
+          }
+        }
+      },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Current Topic Data Distribution",
+      "description": "Cumulative distribution of the data among topic classes seen till now",
+      "gridPos": { "h": 6, "w": 10, "x": 14, "y": 0 },
+      "targets": [
+        {
+          "expr": "sum by (class_name) (topic_model_input_classes_total)",
+          "legendFormat": "{{class_name}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "hideFrom": { "legend": false, "tooltip": false, "viz": false } }
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "auto",
+        "showValue": "never",
+        "groupWidth": 0.6,
+        "barWidth": 0.9,
+        "barRadius": 0,
+        "stacking": "none",
+        "tooltipOptions": { "mode": "single" }
+      }
+    },
+    {
+      "type": "piechart",
+      "title": "Current Topic Data Distribution (Pie Chart)",
+      "description": "Cumulative distribution of the data among topic classes seen till now",
+      "gridPos": { "h": 6, "w": 10, "x": 14, "y": 0 },
+      "targets": [
+        {
+          "expr": "sum by (class_name) (topic_model_input_classes_total)",
+          "legendFormat": "{{class_name}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "barchart",
+      "title": "Current Sentiment Data Distribution",
+      "description": "Cumulative distribution of the data among sentiment classes seen till now",
+      "gridPos": { "h": 6, "w": 10, "x": 14, "y": 0 },
+      "targets": [
+        {
+          "expr": "sum by (class_name) (sent_model_input_classes_total)",
+          "legendFormat": "{{class_name}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "hideFrom": { "legend": false, "tooltip": false, "viz": false } }
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "auto",
+        "showValue": "never",
+        "groupWidth": 0.6,
+        "barWidth": 0.9,
+        "barRadius": 0,
+        "stacking": "none",
+        "tooltipOptions": { "mode": "single" }
+      }
+    },
+    {
+      "type": "piechart",
+      "title": "Current Sentiment Data Distribution (Pie Chart)",
+      "description": "Cumulative distribution of the data among sentiment classes seen till now",
+      "gridPos": { "h": 6, "w": 10, "x": 14, "y": 0 },
+      "targets": [
+        {
+          "expr": "sum by (class_name) (sent_model_input_classes_total)",
+          "legendFormat": "{{class_name}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Model Reliability",
+      "description": "How reliable are each of the models",
+      "gridPos": { "h": 6, "w": 10, "x": 14, "y": 0 },
+      "targets": [
+        {
+          "expr": "(sum by (model_name) (rate(model_inference_status_total{status!=\"success\"}[5m]))/sum by (model_name) (rate(model_inference_status_total[5m]))) * 100",
+          "legendFormat": "{{model_name}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "axisPlacement": "left",
+            "drawStyle": "line",
+            "lineWidth": 2
+          }
+        }
+      },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Topic Data Drift Distribution",
+      "description": "Drift in the topic class distribution",
+      "gridPos": { "h": 6, "w": 10, "x": 14, "y": 0 },
+      "targets": [
+        {
+          "expr": "sum by (class_name) (rate(topic_model_input_classes_total[1h])) / scalar(sum(rate(topic_model_input_classes_total[1h])))",
+          "legendFormat": "{{class_name}}",
+          "refId": "A"
+        },
+        {
+          "expr": "topic_model_baseline_class_distribution",
+          "legendFormat": "{{class_name}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "hideFrom": { "legend": false, "tooltip": false, "viz": false } }
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "auto",
+        "showValue": "never",
+        "groupWidth": 0.6,
+        "barWidth": 0.9,
+        "barRadius": 0,
+        "stacking": "none",
+        "tooltipOptions": { "mode": "single" }
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Sentiment Data Drift Distribution",
+      "description": "Drift in the sentiment class distribution",
+      "gridPos": { "h": 6, "w": 10, "x": 14, "y": 0 },
+      "targets": [
+        {
+          "expr": "sum by (class_name) (rate(sent_model_input_classes_total[1h])) / scalar(sum(rate(sent_model_input_classes_total[1h])))",
+          "legendFormat": "{{class_name}}",
+          "refId": "A"
+        },
+        {
+          "expr": "sent_model_baseline_class_distribution",
+          "legendFormat": "{{class_name}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "hideFrom": { "legend": false, "tooltip": false, "viz": false } }
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "auto",
+        "showValue": "never",
+        "groupWidth": 0.6,
+        "barWidth": 0.9,
+        "barRadius": 0,
+        "stacking": "none",
+        "tooltipOptions": { "mode": "single" }
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Overall Topic PSI",
+      "description": "PSI across all classes in Topic Modelling",
+      "gridPos": { "h": 6, "w": 4, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "expr": "sum((( (sum by (class_name) (rate(topic_model_input_classes_total[1h])) / scalar(sum(rate(topic_model_input_classes_total[1h])))) + 1e-5 )- ( model_baseline_class_dist + 1e-5 )) * ln(( (sum by (class_name) (rate(topic_model_input_classes_total[1h])) / scalar(sum(rate(topic_model_input_classes_total[1h])))) + 1e-5 )/ ( model_baseline_class_dist + 1e-5 )))",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            {
+              "type": "range",
+              "options": {
+                "from": 0,
+                "to": 0.1,
+                "result": { "text": "MILD", "color": "green" }
+              }
+            },
+            {
+              "type": "range",
+              "options": {
+                "from": 0.1,
+                "to": 0.2,
+                "result": { "text": "MODERATE", "color": "yellow" }
+              }
+            },
+            {
+              "type": "range",
+              "options": {
+                "from": 0.2,
+                "to": 100,
+                "result": { "text": "SEVERE", "color": "red" }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Overall Sentiment PSI",
+      "description": "PSI across all classes in Sentiment Analysis",
+      "gridPos": { "h": 6, "w": 4, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "expr": "sum((( (sum by (class_name) (rate(sent_model_input_classes_total[1h])) / scalar(sum(rate(sent_model_input_classes_total[1h])))) + 1e-5 )- ( model_baseline_class_distribution + 1e-5 )) * ln(( (sum by (class_name) (rate(topic_model_input_classes_total[1h])) / scalar(sum(rate(topic_model_input_classes_total[1h])))) + 1e-5 )/ ( sent_model_baseline_data_dist + 1e-5 )))",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            {
+              "type": "range",
+              "options": {
+                "from": 0,
+                "to": 0.1,
+                "result": { "text": "MILD", "color": "green" }
+              }
+            },
+            {
+              "type": "range",
+              "options": {
+                "from": 0.1,
+                "to": 0.2,
+                "result": { "text": "MODERATE", "color": "yellow" }
+              }
+            },
+            {
+              "type": "range",
+              "options": {
+                "from": 0.2,
+                "to": 100,
+                "result": { "text": "SEVERE", "color": "red" }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Topic Model Accuracy Decay",
+      "description": "Calculates the topic model accuracy decay with time",
+      "gridPos": { "h": 6, "w": 10, "x": 14, "y": 0 },
+      "targets": [
+        {
+          "expr": "sum by (model_name) (rate(model_prediction_correctness_total{status=\"correct\"}[24h]))/sum by (model_name) (rate(model_feedback_received_total[24h]))",
+          "legendFormat": "{{mode_name}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "axisLabel": "Latency (sec)",
+            "axisPlacement": "left",
+            "drawStyle": "line",
+            "lineWidth": 2
+          }
+        }
+      },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }
       }
     }
   ],
