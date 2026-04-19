@@ -31,7 +31,7 @@ if __name__ == "__main__":
     logger.setLevel(logging.DEBUG)
     logger.debug("DATA PREP")
 
-    with open(parent / "config.yaml", "r") as f:
+    with open(parent / "config/config.yaml", 'r') as f:
         configs = yaml.full_load(f)
 
     root = configs["topic"]["data"]

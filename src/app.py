@@ -24,7 +24,7 @@ print("Financial News Analysis app started")
 app = Flask(__name__)
 parent = Path(__file__).resolve().parent.parent
 
-with open(parent / "config.yaml", 'r') as f:
+with open(parent / "configs/config.yaml", 'r') as f:
     configs = yaml.full_load(f)
 
 # title - Financial News Analysis
