@@ -6,6 +6,8 @@ import mlflow.transformers as mpt
 import matplotlib.pyplot as plt
 import json
 import importlib.util
+import csv
+import os
 import numpy as np
 import torch
 import torch.ao.quantization as quant
@@ -19,6 +21,7 @@ from transformers import (
     TrainingArguments, 
     Trainer,
     DataCollatorWithPadding,
+    TrainerCallback,
     BitsAndBytesConfig
 )
 
@@ -51,6 +54,28 @@ parent = Path(__file__).resolve().parent.parent.parent
 db = parent  / "mlflow.db"
 mlflow.set_tracking_uri(f"sqlite:///{db}")
 
+class MetricsToCSVCallback(TrainerCallback):
+    def __init__(self, output_path: str):
+        self.output_path = output_path
+        self.has_written_header = False
+
+    def on_log(self, args, state, control, logs=None, **kwargs):
+        if logs is None or "eval_loss" not in logs:
+            return
+
+        clean_logs = {k: v for k, v in logs.items() if not isinstance(v, (list, tuple))}
+        clean_logs["epoch"] = state.epoch
+        clean_logs["step"] = state.global_step
+
+        file_exists = os.path.isfile(self.output_path)
+        
+        with open(self.output_path, mode='a', newline='') as f:
+            writer = csv.DictWriter(f, fieldnames=clean_logs.keys())
+            if not file_exists or not self.has_written_header:
+                writer.writeheader()
+                self.has_written_header = True
+            writer.writerow(clean_logs)
+
 def successful_mail(run_name, exp_name, model_id, results):
     subject = f"MODEL_ID : {model_id} successfully trained"
     body = f"""
@@ -77,6 +102,14 @@ def train(train_dataset_path, valid_dataset_path, model_path,
                            nested=True
                            )
     mlflow.set_tag("Model_id", model_id)
+
+    output_dir = parent / configs["topic"]["model"]["output"]
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    model_name = model_id.replace("/", "_")
+
+    csv_path = output_dir / f"epoch_metrics_{model_name}.csv"
+    csv_callback = MetricsToCSVCallback(output_path=str(csv_path))
     
     compute_metrics = metrics.metrics()
     
@@ -135,7 +168,8 @@ def train(train_dataset_path, valid_dataset_path, model_path,
             eval_dataset=valid_dataset, # type: ignore
             processing_class=tokenizer,
             data_collator=data_collator,
-            compute_metrics=compute_metrics # type: ignore
+            compute_metrics=compute_metrics, # type: ignore
+            callbacks=[csv_callback]
         )
 
         trainer.train()
@@ -152,9 +186,9 @@ def train(train_dataset_path, valid_dataset_path, model_path,
         mlflow.log_artifact(local_path=cm_path, artifact_path="confusion_matrices")
 
         mlflow.log_metrics(results)
+        
         trainer.save_model(model_path)
 
-        model_name = model_id.replace("/", "_")
         model_info = mpt.log_model(
             transformers_model={"model": model, "tokenizer": tokenizer},
             name="model",

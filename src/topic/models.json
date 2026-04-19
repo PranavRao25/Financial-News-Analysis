@@ -14,7 +14,7 @@
         "hyperparams": {
             "lr": 2e-5,
             "train_batch_size": 32,
-            "eval_batch_size": 64,
+            "eval_batch_size": 16,
             "epochs": 5,
             "weight_decay": 0.01
         }
@@ -24,7 +24,7 @@
         "hyperparams": {
             "lr": 3e-5,
             "train_batch_size": 32,
-            "eval_batch_size": 64,
+            "eval_batch_size": 16,
             "epochs": 5,
             "weight_decay": 0.01
         }
