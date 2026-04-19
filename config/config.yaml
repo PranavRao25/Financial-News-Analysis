@@ -51,11 +51,21 @@ sentiment:
       wgt_decay: 0.01
       gradient_accumulation_steps: 8
 
+default_args:
+  owner: "orchaestrator"
+  depends_on_past: False
+  email_on_failure: True
+  email_on_retry: False
+  retries: 3
+  retry_delay: 2
+  retry_exponential_backoff: True
+
 deployment:
   port: 8501  # Flask
   sent_serve: 5001  # MLFlow serve for Sentiment Analysis
   topic_serve: 5003  # MLFlow serve for Topic Modelling
   mlflow: 5000
+  airflow: 8080
   logs:
   version: "v2"
 
