@@ -17,8 +17,8 @@ topic:
   model:
     device: "cuda"
     name: "distilbert/distilbert-base-uncased"
-    path: "models/topic/v1"
-    output: "output/v1"
+    path: "models/topic/v2"
+    output: "output/v2"
     version: "v2"
     hyperparams:
       lr: 3e-5
@@ -45,10 +45,10 @@ sentiment:
     path: "models/sentiment/v1"
     version: "v1"
     hyperparams:
-      lr: 2e-5
+      lr: 3e-5
       train_batch_size: 32
-      eval_batch_size: 64
-      epochs: 1
+      eval_batch_size: 16
+      epochs: 10
       weight_decay: 0.01
       gradient_accumulation_steps: 8
 

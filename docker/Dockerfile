@@ -26,6 +26,3 @@ EXPOSE 6969 8000 5001 9090 3000
 RUN run.sh
 
 HEALTHCHECK CMD curl --fail http://localhost:6969 || exit 1
-
-# node_exporter-1.10.2.linux-amd64
-# alertmanager-0.31.1.linux-amd64

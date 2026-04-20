@@ -11,6 +11,7 @@ import io
 from io import StringIO
 import psutil
 import csv
+import requests
 import zipfile
 import cv2
 import pytesseract
@@ -105,15 +106,17 @@ def get_metrics():
         )
     }
 
-def init_topic_model(path):
+def init_topic_model():
     print("Init topic model")
-    topic = TopicModel(path)
-    return topic
+    serve_port = configs["deployment"]["topic_serve"]
+    MLFLOW_URI = f"http://127.0.0.1:{serve_port}/invocations"
+    return MLFLOW_URI
 
-def init_sentiment_model(path):
+def init_sentiment_model():
     print("Init Sentiment model")
-    sentiment = SentimentModel(path)
-    return sentiment
+    serve_port = configs["deployment"]["sent_serve"]
+    MLFLOW_URI = f"http://127.0.0.1:{serve_port}/invocations"
+    return MLFLOW_URI
 
 def analyse(file, ext):
     if ext in {"jpg", "jpeg", "png"}:
@@ -146,9 +149,21 @@ def analyse(file, ext):
 
 def infer(txt, mode, model_name, model, mapping):
     prod_metrics["requests"].labels(mode=mode).inc() # type: ignore
+
+    label = "Unknown"
+    confidence = 0.0
+
     try:
         with prod_metrics["inference_latency"].labels(mode=mode, model_type=model_name).time(): # type: ignore
-            results = model.predict([txt])
+            payload = {"inputs": [txt]}
+            headers = {"Content-Type": "application/json"}
+
+            response = requests.post(model, json=payload, headers=headers)
+
+            if response.status_code != 200:
+                raise Exception(f"MLFlow API Error {response.status_code}: {response.text}")
+            
+            results = response.json().get("prediction", response.json())
             for item in results:
                 label = str(mapping[str(item["predicted_class"])])
                 confidence = item["confidence"]
@@ -199,11 +214,11 @@ with open(parent / configs["sentiment"]["data"]["dist"], "r") as f:
 
 topic_model_name = configs["topic"]["model"]["name"]
 topic_model_path = configs["topic"]["model"]["path"]
-topic = init_topic_model(parent / topic_model_path)
+topic = init_topic_model()
 
 sent_model_name = configs["sentiment"]["model"]["name"]
 sent_model_path = configs["sentiment"]["model"]["path"]
-sentiment = init_sentiment_model(parent / sent_model_path)
+sentiment = init_sentiment_model()
 
 port = configs["deployment"]["port"]
 
@@ -262,13 +277,13 @@ def root():
     else:
         return render_template("index.html")
         
-# @app.route("/health", methods=["GET", "POST"])
-# def health():
-#     pass
+@app.route("/health", methods=["GET", "POST"])
+def health():
+    return Response(generate_latest(), mimetype=CONTENT_TYPE_LATEST)
 
-# @app.route("/ready", methods=["GET", "POST"])
-# def ready():
-#     pass
+@app.route("/ready", methods=["GET", "POST"])
+def ready():
+    return Response(generate_latest(), mimetype=CONTENT_TYPE_LATEST)
 
 @app.route("/metrics", methods=["GET", "POST"])
 def display_metrics():

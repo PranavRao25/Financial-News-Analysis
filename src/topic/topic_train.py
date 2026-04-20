@@ -241,9 +241,9 @@ if __name__ == "__main__":
     valid_dataset_path = Path(root["processed"]) / "valid"
 
     model_details = configs["topic"]["model"]
-    model_path = model_details["path"]
+    model_path = parent / model_details["path"]
     model_id = model_details["name"]
-    # hyperparams = model_details["hyperparams"]
+    hyperparams = model_details["hyperparams"]
     device = model_details["device"]
 
     with open(parent / "src/topic/models.json", "r") as f:
@@ -266,11 +266,11 @@ if __name__ == "__main__":
         try:
             # exp = mlflow.set_experiment(experiment_id=exp_id)
 
-            for model in models:
-                model_id, hyperparams = model["name"], model["hyperparams"]
-                run_name = f"Topic_Train_{model_id}_{hyperparams}"
-                train(train_dataset_path, valid_dataset_path, model_path,
-                    model_id, no_classes, exp_name, run_name, hyperparams, device)
+            # for model in models:
+            #     model_id, hyperparams = model["name"], model["hyperparams"]
+            run_name = f"Topic_Train_{model_id}_{hyperparams}"
+            train(train_dataset_path, valid_dataset_path, model_path,
+                model_id, no_classes, exp_name, run_name, hyperparams, device)
         except Exception as e:
             print(e)
             raise e
