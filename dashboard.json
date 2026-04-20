@@ -592,8 +592,8 @@
     },
     {
       "type": "timeseries",
-      "title": "Topic Model Accuracy Decay",
-      "description": "Calculates the topic model accuracy decay with time",
+      "title": "Model Accuracy Decay",
+      "description": "Calculates the model accuracy decay with time",
       "gridPos": { "h": 6, "w": 10, "x": 14, "y": 0 },
       "targets": [
         {

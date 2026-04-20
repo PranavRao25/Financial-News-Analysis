@@ -14,7 +14,6 @@ import os
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import torch
 import mlflow
 import mlflow.transformers as mpt
 import importlib.util
@@ -22,14 +21,16 @@ from mlflow.models import infer_signature
 from mlflow.tracking import MlflowClient
 from datasets import load_dataset, load_from_disk
 from transformers import (
-    AutoTokenizer, 
+    AutoTokenizer,
+    BertTokenizer,
     AutoModelForSequenceClassification, 
     TrainingArguments, 
     Trainer,
-    DataCollatorWithPadding
+    DataCollatorWithPadding,
+    TrainerCallback
 )
 
-mpt.autolog(log_model_signatures=True)
+mpt.autolog(log_model_signatures=True, log_models=False)
 mlflow.enable_system_metrics_logging()
 assert torch.cuda.is_available(), "CUDA is not available. Check your PyTorch installation!"
 print(f"Using GPU: {torch.cuda.get_device_name(0)}")
@@ -52,6 +53,28 @@ parent = Path(__file__).resolve().parent.parent.parent
 db = parent  / "mlflow.db"
 mlflow.set_tracking_uri(f"sqlite:///{db}")
 
+class MetricsToCSVCallback(TrainerCallback):
+    def __init__(self, output_path: str):
+        self.output_path = output_path
+        self.has_written_header = False
+
+    def on_log(self, args, state, control, logs=None, **kwargs):
+        if logs is None or "eval_loss" not in logs:
+            return
+
+        clean_logs = {k: v for k, v in logs.items() if not isinstance(v, (list, tuple))}
+        clean_logs["epoch"] = state.epoch
+        clean_logs["step"] = state.global_step
+
+        file_exists = os.path.isfile(self.output_path)
+        
+        with open(self.output_path, mode='a', newline='') as f:
+            writer = csv.DictWriter(f, fieldnames=clean_logs.keys())
+            if not file_exists or not self.has_written_header:
+                writer.writeheader()
+                self.has_written_header = True
+            writer.writerow(clean_logs)
+
 def successful_mail(run_name, exp_name, model_id, results):
     subject = f"MODEL_ID : {model_id} successfully trained"
     body = f"""
@@ -71,6 +94,7 @@ def failure_mail(run_name, exp_name, model_id, e):
 
 def train(train_dataset_path, valid_dataset_path, model_path, model_id,
           no_classes, exp_name, run_name, hyperparams, device):
+    
     print(f"Model {model_id} training start")
     run = mlflow.start_run(run_name=run_name,
                            description=f"Test the performance of {model_id} for topic modelling",
@@ -78,6 +102,14 @@ def train(train_dataset_path, valid_dataset_path, model_path, model_id,
                            )
     mlflow.set_tag("Model_id", model_id)
     
+    output_dir = parent / configs["sentiment"]["model"]["output"]
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    model_name = model_id.replace("/", "_")
+
+    csv_path = output_dir / f"epoch_metrics_{model_name}.csv"
+    csv_callback = MetricsToCSVCallback(output_path=str(csv_path))
+
     compute_metrics = metrics.metrics()
     
     # PREPARE THE DATASET
@@ -91,13 +123,15 @@ def train(train_dataset_path, valid_dataset_path, model_path, model_id,
     epochs = hyperparams.get("epochs", 10)
     weight_decay = float(hyperparams.get("weight_decay", 0.01))
     gradient_accumulation_steps = int(hyperparams.get("gradient_accumulation_steps", 8))
+    
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     print(f"No of Epochs: {epochs}")
     mlflow.log_params(hyperparams)
 
     try:
-        tokenizer = AutoTokenizer.from_pretrained(model_id)
+        # tokenizer = AutoTokenizer.from_pretrained(model_id, use_fast=True)
+        tokenizer = BertTokenizer.from_pretrained(model_id)
         data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
         model = AutoModelForSequenceClassification.from_pretrained(
             model_id, 
@@ -133,29 +167,29 @@ def train(train_dataset_path, valid_dataset_path, model_path, model_id,
             eval_dataset=valid_dataset, # type: ignore
             processing_class=tokenizer,
             data_collator=data_collator,
-            compute_metrics=compute_metrics # type: ignore
+            compute_metrics=compute_metrics, # type: ignore
+            callbacks=[csv_callback]
         )
 
         trainer.train()
 
         results = trainer.evaluate()
+        cm = results.pop("eval_cm")
         
         # LOG CONFUSION MATRIX
-        cm = results.pop("eval_cm")
         cm_path = parent / configs["sentiment"]["model"]["output"] / "confusion_matrix.png"
         plt.imsave(cm_path, cm)
         mlflow.log_artifact(local_path=cm_path, artifact_path="confusion_matrices")
 
         mlflow.log_metrics(results)
+
         trainer.save_model(model_path)
 
-        # param_counts = sum(p.numel() for p in model.parameters() if p.requires_grad)
-        # mlflow.log_param("param_count", param_counts)
-
-        model_name = model_id.replace("/", "_")
         model_info = mpt.log_model(
             transformers_model={"model": model, "tokenizer": tokenizer},
             name="model",
+            artifacts_path="model",
+            model_config=model.config.to_dict(),
             task="text-classification",
             registered_model_name=f"Financial_Sentiment_{model_name}"
         )
@@ -205,7 +239,7 @@ if __name__ == "__main__":
     valid_dataset_path = Path(root["processed"]) / "valid"
 
     model_details = configs["sentiment"]["model"]
-    model_path = model_details["path"]
+    model_path = parent / model_details["path"]
     model_id = model_details["name"]
     device = model_details["device"]
 
@@ -223,17 +257,18 @@ if __name__ == "__main__":
     exp_name = "Sentiment_Analysis_Model_Comparisons"
 
     mlflow.end_run()
-    with mlflow.start_run() as parent_run:
+
+    run_name = f"Sentiment_Train_{model_id}_lr={args.lr}_epochs={args.epochs}"
+    with mlflow.start_run(run_name=run_name) as parent_run:
         active_experiment = mlflow.get_experiment(mlflow.active_run().info.experiment_id) # type: ignore
         exp_name = active_experiment.name
         try:
             # exp = mlflow.set_experiment(experiment_id=exp_id)
 
-            for model in models:
-                model_id, hyperparams = model["name"], model["hyperparams"]
-                run_name = f"Sentiment_Train_{model_id}_{hyperparams}"
-                train(train_dataset_path, valid_dataset_path, model_path,
-                      model_id, no_classes, exp_name, run_name, hyperparams, device)
+            # for model in models:
+            #     model_id, hyperparams = model["name"], model["hyperparams"]
+            train(train_dataset_path, valid_dataset_path, model_path,
+                    model_id, no_classes, exp_name, run_name, hyperparams, device)
         except Exception as e:
             print(e)
             raise e

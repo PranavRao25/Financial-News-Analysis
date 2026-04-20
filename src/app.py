@@ -5,6 +5,7 @@ import os
 import requests
 import json
 from uuid import uuid4
+import requests
 import io
 from io import StringIO
 import psutil
@@ -23,7 +24,7 @@ print("Financial News Analysis app started")
 app = Flask(__name__)
 parent = Path(__file__).resolve().parent.parent
 
-with open(parent / "config.yaml", 'r') as f:
+with open(parent / "config/config.yaml", 'r') as f:
     configs = yaml.full_load(f)
 
 # title - Financial News Analysis
@@ -161,18 +162,16 @@ def infer(txt, mode, model_name, uri, mapping):
                 raise Exception(f"MLFlow API Error {response.status_code}: {response.text}")
 
             results = response.json().get("predictions", response.json())
-
             for item in results:
                 label = str(mapping[str(item["predicted_class"])])
                 confidence = item["confidence"]
     except Exception as e:
         error_name = type(e).__name__
-        # st.error(f"Error in processing : {error_name}")
-        # st.write(prod_metrics)
-        # st.write(mode)
         logging.error(f"Error during {mode} inference: {e}")
         prod_metrics["errors"].labels(mode=mode, error_types=error_name).inc() # type: ignore
+        prod_metrics["model_reliability"].labels(model_name=model_name, status="error").inc() # type: ignore
     finally:
+        prod_metrics["model_reliability"].labels(model_name=model_name, status="success").inc() # type: ignore
         prod_metrics["active_requests"].labels(session_id=session_id).dec() # type: ignore
 
     return label, confidence
@@ -221,8 +220,6 @@ sent_model_path = configs["sentiment"]["model"]["path"]
 sent_uri = init_sentiment_model()
 
 port = configs["deployment"]["port"]
-# st.write(f"Model used for Sentiment Analysis - {sent_model_name}")
-# st.write(f"Model used for Topic Modelling - {topic_model_name}")
 
 session_id = uuid4()
 app.config["SESSION_ID"] = session_id
@@ -266,13 +263,13 @@ def root():
                                sent_model=sent_model_name,
                                topic_model=topic_model_name)
 
-# @app.route("/health", methods=["GET", "POST"])
-# def health():
-#     pass
+@app.route("/health", methods=["GET", "POST"])
+def health():
+    return Response(generate_latest(), mimetype=CONTENT_TYPE_LATEST)
 
-# @app.route("/ready", methods=["GET", "POST"])
-# def ready():
-#     pass
+@app.route("/ready", methods=["GET", "POST"])
+def ready():
+    return Response(generate_latest(), mimetype=CONTENT_TYPE_LATEST)
 
 @app.route("/metrics", methods=["GET", "POST"])
 def display_metrics():
@@ -286,7 +283,7 @@ def ingest():
         return jsonify({"error": "No data found"}), 404
     
     pred_id = data.get("pred_id", "")
-    model_name = data.get("model_name", "")
+    model_name = data.get("model_name", "")  # has to be sentiment / topic
     true_label = data.get("true_label", "")
 
     if pred_id not in prediction_cache:

@@ -12,7 +12,7 @@ entry_points:
     command: "python3 src/utils/mail.py"
   main:
     parameters:
-      lr: {type: float, default: 0.0001}
-      epochs: {type: int, default: 1}
+      lr: {type: float, default: 0.00004}
+      epochs: {type: int, default: 15}
       wgt_decay: {type: float, default: 0.01}
     command: "python3 src/sentiment/sent_train.py --lr {lr} --epochs {epochs} --wgt_decay {wgt_decay}"

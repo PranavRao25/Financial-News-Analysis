@@ -41,15 +41,15 @@ sentiment:
     embed_len: 128
   model:
     name: "huawei-noah/TinyBERT_General_4L_312D"
-    path: "models/sentiment/v2"
-    output: "output/v2"
-    version: "v2"
+    path: "models/sentiment/v3"
+    output: "output/v3"
+    version: "v3"
     device: "cuda"
     hyperparams:
-      lr: 2e-5
+      lr: 4e-5
       train_batch_size: 32
       eval_batch_size: 16
-      epochs: 1
+      epochs: 15
       wgt_decay: 0.01
       gradient_accumulation_steps: 8
 
