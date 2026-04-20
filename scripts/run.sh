@@ -11,6 +11,7 @@ cleanup() {
 }
 
 trap cleanup SIGINT SIGTERM
+cd ..
 echo "Starting Observability Stack"
 echo "[1/2] Start Grafana"
 sudo systemctl start grafana-server

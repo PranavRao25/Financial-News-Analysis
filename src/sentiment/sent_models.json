@@ -14,5 +14,13 @@
             "epochs": 15,
             "weight_decay": 0.01
         }
+    },
+    {
+        "name": "distilbert/distilbert-base-uncased",
+        "hyperparams": {
+            "lr": 2e-5,
+            "epochs": 15,
+            "weight_decay": 0.01
+        }
     }
 ]

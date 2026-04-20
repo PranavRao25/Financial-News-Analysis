@@ -56,7 +56,7 @@ if __name__ == "__main__":
     logger.setLevel(logging.DEBUG)
     logger.debug("DATA CLEAN")
 
-    with open(parent / "config.yaml", "r") as f:
+    with open(parent / "config/config.yaml", "r") as f:
         configs = yaml.full_load(f)
 
     root = configs["sentiment"]["data"]

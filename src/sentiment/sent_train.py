@@ -87,7 +87,7 @@ def train(train_dataset_path, valid_dataset_path, model_path, model_id,
     # PREPARE THE MODEL
     lr = float(hyperparams.get("lr", 1e-5))
     train_batch_size = hyperparams.get("train_batch_size", 32)
-    eval_batch_size = hyperparams.get("eval_batch_size", 64)
+    eval_batch_size = hyperparams.get("eval_batch_size", 16)
     epochs = hyperparams.get("epochs", 10)
     weight_decay = float(hyperparams.get("weight_decay", 0.01))
     gradient_accumulation_steps = int(hyperparams.get("gradient_accumulation_steps", 8))
@@ -184,7 +184,7 @@ if __name__ == "__main__":
     logger.setLevel(logging.DEBUG)
     logger.debug("MODEL TRAIN START")
 
-    with open(parent / "config.yaml", "r") as f:
+    with open(parent / "config/config.yaml", "r") as f:
         configs = yaml.full_load(f)
     
     parser = argparse.ArgumentParser()

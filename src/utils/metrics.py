@@ -14,7 +14,7 @@ _ROC_METRIC = evaluate.load("roc_auc")
 
 parent = Path(__file__).resolve().parent.parent.parent
 
-with open(parent / "config.yaml", "r") as f:
+with open(parent / "config/config.yaml", "r") as f:
     configs = yaml.full_load(f)
 
 no_classes = configs["sentiment"]["data"]["no_classes"]

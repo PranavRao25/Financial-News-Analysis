@@ -9,6 +9,7 @@ topic:
     production: "data/topic/production"
     version: "v3"
     mapping: "data/topic/mapping.json"
+    dist: "data/topic/dist.csv"
     train_valid_split: 0.25
     random_state : 42
     embed_len: 128
@@ -20,7 +21,7 @@ topic:
     hyperparams:
       lr: 3e-5
       train_batch_size: 32
-      eval_batch_size: 64
+      eval_batch_size: 16
       epochs: 1
       weight_decay: 0.01
 
@@ -31,6 +32,7 @@ sentiment:
     production: "data/sentiment/production"
     version: "v4"
     mapping: "data/sentiment/mapping.json"
+    dist: "data/sent/dist.csv"
     split_ratio:
       - 0.25
       - 0.25
@@ -46,7 +48,7 @@ sentiment:
     hyperparams:
       lr: 2e-5
       train_batch_size: 32
-      eval_batch_size: 64
+      eval_batch_size: 16
       epochs: 1
       wgt_decay: 0.01
       gradient_accumulation_steps: 8
@@ -79,6 +81,7 @@ monitoring:
     alertmanager: 9093 # manage alerts and silences
     prometheus: 9090 # prometheus server
     grafana: 3000 # grafana dashboard
+    redis: 6379
   current_version: "v2"
 
 mail_alerts:

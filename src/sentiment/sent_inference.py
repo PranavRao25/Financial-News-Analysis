@@ -46,7 +46,7 @@ class SentimentModel:
         return results
 
 if __name__ == "__main__":
-    with open(parent / "config.yaml", "r") as f:
+    with open(parent / "config/config.yaml", "r") as f:
         configs = yaml.full_load(f)
     model_path = configs["sentiment"]["model"]["path"]
     classifier = SentimentModel(model_path, device="cpu")

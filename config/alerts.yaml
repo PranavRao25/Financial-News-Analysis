@@ -1,0 +1,65 @@
+groups:
+  - name: Caption_Alerts
+    rules:
+    - alert: HostHighCpuLoad  # resource overuse : CPU > 80% for 1 minutes
+      expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[1m])) * 100) > 50
+      for: 1m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Host CPU Load > 50%"
+        description: "CPU Load is {{ $value }}%"
+    
+    - alert: HighInferenceLatency  # Inference latency is too high
+      expr: rate(app_inference_latency_seconds_sum[1m]) / rate(app_inference_latency_seconds_count[1m]) > 2.0
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Host ML Inference Latency"
+        description: "Model Inference time is {{ $value }}%"
+    
+    - alert: ApplicationDown  # Flask error
+      expr: up{job="image_captioning"} == 0
+      for: 10s
+      labels:
+        severity: critical
+      annotations:
+        summary: "AI Application endpoint is down"
+        description: "Prometheus cannot collect metrics"
+    
+    - alert: HighAppErrorRate
+      expr: sum(rate(app_total_errors[2m])) / sum(rate(app_total_requests[2m])) > 0.01
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: "High Error Rate"
+        description: "Application experiencing HTTP Error Rate > 1%"
+    
+    - alert: SpecificModelDown
+      expr: (sum by (model_name) (rate(model_inference_status_total{status!="success"}[5m]))/sum by (model_name) (rate(model_inference_status_total[5m]))) > 0.7
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Model unreliable"
+        description: "Model is misbehaving with error rate {{value}}%"
+
+    - alert: SevereDataDriftTopic
+      expr: sum((( (sum by (class_name) (rate(topic_model_input_classes_total[1h])) / scalar(sum(rate(topic_model_input_classes_total[1h])))) + 1e-5 )- ( model_baseline_class_dist + 1e-5 )) * ln(( (sum by (class_name) (rate(topic_model_input_classes_total[1h])) / scalar(sum(rate(topic_model_input_classes_total[1h])))) + 1e-5 )/ ( model_baseline_class_dist + 1e-5 ))) > 0.2
+      for: 1h
+      labels:
+        severity: critical
+      annotations:
+        summary: "Data Drift detected in Topic Modelling"
+        description: "Data distribution has drifted beyond the threshold. Re-training needed"
+
+    - alert: SevereDataDriftSent
+      expr: sum((( (sum by (class_name) (rate(sent_model_input_classes_total[1h])) / scalar(sum(rate(sent_model_input_classes_total[1h])))) + 1e-5 )- ( model_baseline_class_distribution + 1e-5 )) * ln(( (sum by (class_name) (rate(topic_model_input_classes_total[1h])) / scalar(sum(rate(topic_model_input_classes_total[1h])))) + 1e-5 )/ ( sent_model_baseline_data_dist + 1e-5 ))) > 0.2
+      for: 1h
+      labels:
+        severity: critical
+      annotations:
+        summary: "Data Drift detected in Sentiment Analysis"
+        description: "Data distribution has drifted beyond the threshold. Re-training needed - {{ value }}"
