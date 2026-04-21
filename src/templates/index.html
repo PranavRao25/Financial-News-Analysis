@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!-- <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -64,6 +64,145 @@
                 document.getElementById('resultBox').innerHTML = `<p style="color:red;">Network or CORS Error occurred.</p>`;
             }
         };
+    </script>
+</body>
+</html> -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Financial News Analysis Dashboard</title>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; background-color: #f4f4f9; color: #333; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .upload-section { margin-bottom: 20px; padding: 15px; background: #eef2f5; border-radius: 6px; display: flex; gap: 10px; align-items: center; }
+        .upload-section input[type="file"] { flex-grow: 1; }
+        .upload-section button { background: #0056b3; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .upload-section button:hover { background: #004494; }
+        .text-box { background: #f8f9fa; padding: 15px 20px; border-left: 4px solid #0056b3; margin-bottom: 25px; font-size: 1.1em; line-height: 1.5; color: #444; min-height: 50px;}
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .card { border: 1px solid #eaeaea; padding: 20px; border-radius: 6px; }
+        .card h3 { margin-top: 0; border-bottom: 2px solid #f4f4f9; padding-bottom: 10px; }
+        .metric { display: flex; justify-content: space-between; margin-bottom: 12px; }
+        .label { font-weight: 600; color: #666; }
+        .value { font-family: monospace; background: #f4f4f9; padding: 2px 6px; border-radius: 4px; }
+        .error { color: #d9534f; font-weight: bold; margin-top: 10px; display: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Financial News Analysis</h2>
+
+        <div class="upload-section">
+            <input type="file" id="fileInput" accept=".txt,.pdf,.png,.jpg,.jpeg">
+            <button onclick="uploadAndAnalyze()">Analyze File</button>
+        </div>
+        <div id="errorMessage" class="error"></div>
+
+        <div class="text-box" id="inputText">
+            Waiting for document upload...
+        </div>
+
+        <div class="grid">
+            <div class="card">
+                <h3>Sentiment Analysis</h3>
+                <div class="metric">
+                    <span class="label">Label</span> 
+                    <span class="value" id="sentLabel">-</span>
+                </div>
+                <div class="metric">
+                    <span class="label">Confidence</span> 
+                    <span class="value" id="sentConf">-</span>
+                </div>
+                <div class="metric">
+                    <span class="label">Model Engine</span> 
+                    <span class="value" id="sentModel">{{ sent_model }}</span> </div>
+            </div>
+
+            <div class="card">
+                <h3>Topic Modeling</h3>
+                <div class="metric">
+                    <span class="label">Label</span> 
+                    <span class="value" id="topicLabel">-</span>
+                </div>
+                <div class="metric">
+                    <span class="label">Confidence</span> 
+                    <span class="value" id="topicConf">-</span>
+                </div>
+                <div class="metric">
+                    <span class="label">Model Engine</span> 
+                    <span class="value" id="topicModel">{{ topic_model }}</span> </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function uploadAndAnalyze() {
+            const fileInput = document.getElementById('fileInput');
+            const errorMessage = document.getElementById('errorMessage');
+            
+            // Clear previous errors
+            errorMessage.style.display = 'none';
+            errorMessage.innerText = '';
+
+            if (fileInput.files.length === 0) {
+                showError("Please select a file first.");
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append("file", fileInput.files[0]);
+
+            document.getElementById('inputText').innerText = "Processing...";
+
+            try {
+                // Send the POST request to your Flask root function
+                const response = await fetch('/', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.message || "An error occurred during inference.");
+                }
+
+                // Populate the UI with the returned dictionary
+                populateDashboard(data);
+
+            } catch (error) {
+                showError(error.message);
+                document.getElementById('inputText').innerText = "Inference failed.";
+            }
+        }
+
+        function populateDashboard(data) {
+            document.getElementById('inputText').innerText = `"${data.text}"`;
+
+            // Populate Sentiment Card
+            if (data.sentiment) {
+                document.getElementById('sentLabel').innerText = data.sentiment.label;
+                document.getElementById('sentConf').innerText = (data.sentiment.confidence * 100).toFixed(1) + '%';
+            }
+
+            // Populate Topic Card (Gracefully handles if topic is commented out in backend)
+            if (data.topic) {
+                document.getElementById('topicLabel').innerText = data.topic.label;
+                document.getElementById('topicConf').innerText = (data.topic.confidence * 100).toFixed(1) + '%';
+            } else {
+                document.getElementById('topicLabel').innerText = 'Disabled';
+                document.getElementById('topicConf').innerText = '-';
+            }
+        }
+
+        function showError(msg) {
+            const el = document.getElementById('errorMessage');
+            el.innerText = msg;
+            el.style.display = 'block';
+        }
     </script>
 </body>
 </html>

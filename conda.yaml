@@ -15,7 +15,7 @@ dependencies:
   - pillow
   - pip
   - pip:
-    - mlflow
+    - mlflow=3.10.1
     - Flask
     - python-dotenv
     - psutil
