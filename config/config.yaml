@@ -1,0 +1,93 @@
+name : "Financial-News-Analysis"
+author : "Pranav Rao"
+version : "v1"
+
+topic:
+  data:
+    raw: "data/topic/raw"
+    processed: "data/topic/processed"
+    production: "data/topic/production"
+    version: "v3"
+    mapping: "data/topic/mapping.json"
+    dist: "data/topic/dist.csv"
+    train_valid_split: 0.25
+    random_state : 42
+    embed_len: 128
+    no_classes: 20
+  model:
+    name: "huawei-noah/TinyBERT_General_4L_312D"
+    path: "models/topic/v1"
+    version: "v1"
+    hyperparams:
+      lr: 3e-5
+      train_batch_size: 32
+      eval_batch_size: 16
+      epochs: 1
+      weight_decay: 0.01
+
+sentiment:
+  data:
+    raw: "data/sentiment/raw"
+    processed: "data/sentiment/processed"
+    production: "data/sentiment/production"
+    version: "v4"
+    mapping: "data/sentiment/mapping.json"
+    dist: "data/sentiment/dist.csv"
+    split_ratio:
+      - 0.25
+      - 0.25
+    random_state: 42
+    no_classes: 3
+    embed_len: 128
+  model:
+    name: "huawei-noah/TinyBERT_General_4L_312D"
+    path: "models/sentiment/v3"
+    output: "output/v3"
+    version: "v3"
+    device: "cuda"
+    hyperparams:
+      lr: 4e-5
+      train_batch_size: 32
+      eval_batch_size: 16
+      epochs: 15
+      wgt_decay: 0.01
+      gradient_accumulation_steps: 8
+
+default_args:
+  owner: "orchaestrator"
+  depends_on_past: False
+  email_on_failure: True
+  email_on_retry: False
+  retries: 3
+  retry_delay: 2
+  retry_exponential_backoff: True
+
+deployment:
+  port: 8501  # Flask
+  sent_serve: 5001  # MLFlow serve for Sentiment Analysis
+  topic_serve: 5003  # MLFlow serve for Topic Modelling
+  mlflow: 5000
+  airflow: 8080
+  logs:
+  version: "v2"
+
+monitoring:
+  url: "localhost"
+  port:
+    model: 8000 # model logging
+    streamlit: 8501 # streamlit
+    node: 9100  # node manager
+    alert: 5002 # alert mail server
+    alertmanager: 9093 # manage alerts and silences
+    prometheus: 9090 # prometheus server
+    grafana: 3000 # grafana dashboard
+    redis: 6379
+  current_version: "v2"
+
+mail_alerts:
+  sender_mail: ${EMAIL}
+  receiver_mail: ${EMAIL}
+  password: ${PASSWORD}
+
+post-production:
+  logs:

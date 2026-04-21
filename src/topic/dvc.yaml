@@ -1,0 +1,54 @@
+stages:
+  data_prep:
+    wdir: ../../
+    cmd: python data_prep.py
+    deps:
+      - data_prep.py
+      - data/topic/raw/train.csv
+      - data/topic/raw/test.csv
+    params:
+      - config.yaml:
+        - topic.data.raw
+        - topic.data.processed
+        - topic.data.random_state
+        - topic.data.train_valid_split
+    outs:
+      - data/topic/processed/train.csv
+      - data/topic/processed/valid.csv
+      - data/topic/processed/test.csv
+
+  data_tokenize:
+    wdir: ../../
+    cmd: python data_tokenize.py
+    deps:
+      - data_tokenize.py
+      - data/topic/processed/train.csv
+      - data/topic/processed/valid.csv
+      - data/topic/processed/test.csv
+    params:
+      - config.yaml:
+        - topic.data.processed
+        - topic.data.embed_len
+        - topic.model.name
+    outs:
+      - data/topic/processed/train
+      - data/topic/processed/valid
+      - data/topic/processed/test
+
+  train:
+    wdir: ../../
+    cmd: python train.py
+    deps:
+      - train.py
+      - data/topic/processed/train
+      - data/topic/processed/valid
+    params:
+      - config.yaml:
+        - topic.data.processed
+        - topic.data.no_classes
+        - topic.model.name
+        - topic.model.path
+        - topic.model.hyperparams
+    outs:
+      - models/topic/v1
+      
