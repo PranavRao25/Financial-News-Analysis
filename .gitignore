@@ -7,6 +7,12 @@ wandb/
 logs/
 *.0
 checkpoint-399/
+checkpoint-**/
+chunks_head/
+nflog
+silences
+queries.active
+wal/
 prometheus-3.10.0.linux-amd64/promtool
 prometheus-3.10.0.linux-amd64/prometheus
 node_exporter-1.10.2.linux-amd64/node_exporter
