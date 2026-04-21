@@ -24,8 +24,8 @@ topic:
       lr: 3e-5
       train_batch_size: 32
       eval_batch_size: 16
-      epochs: 5
-      wgt_decay: 0.01
+      epochs: 1
+      weight_decay: 0.01
 
 sentiment:
   data:
@@ -34,6 +34,7 @@ sentiment:
     production: "data/sentiment/production"
     version: "v4"
     mapping: "data/sentiment/mapping.json"
+    dist: "data/sentiment/dist.csv"
     split_ratio:
       - 0.25
       - 0.25
@@ -41,25 +42,39 @@ sentiment:
     no_classes: 3
     embed_len: 128
   model:
-    name: "distilbert-base-uncased"
-    path: "models/sentiment/v1"
-    version: "v1"
+    name: "huawei-noah/TinyBERT_General_4L_312D"
+    path: "models/sentiment/v3"
+    output: "output/v3"
+    version: "v3"
+    device: "cuda"
     hyperparams:
-      lr: 3e-5
+      lr: 4e-5
       train_batch_size: 32
       eval_batch_size: 16
-      epochs: 10
-      weight_decay: 0.01
+      epochs: 15
+      wgt_decay: 0.01
       gradient_accumulation_steps: 8
 
+default_args:
+  owner: "orchaestrator"
+  depends_on_past: False
+  email_on_failure: True
+  email_on_retry: False
+  retries: 3
+  retry_delay: 2
+  retry_exponential_backoff: True
+
 deployment:
-  port: 6969  # Flask
-  serve: 5001  # mlflow serve
+  port: 8501  # Flask
+  sent_serve: 5001  # MLFlow serve for Sentiment Analysis
+  topic_serve: 5003  # MLFlow serve for Topic Modelling
   mlflow: 5000
+  airflow: 8080
   logs:
   version: "v2"
 
 monitoring:
+  url: "localhost"
   port:
     model: 8001 # model logging
     streamlit: 8501 # streamlit

@@ -5,38 +5,177 @@
   "timezone": "browser",
   "refresh": "5s",
   "schemaVersion": 38,
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "links": [],
   "panels": [
     {
-      "type": "stat",
-      "title": "Application Health",
       "description": "Promotheus for Application is Up",
-      "gridPos": { "h": 6, "w": 4, "x": 0, "y": 0 },
-      "targets": [
-        {
-          "expr": "up{job=\"financial-analysis\"}",
-          "refId": "A",
-          "instant": true
-        }
-      ],
       "fieldConfig": {
         "defaults": {
           "mappings": [
             {
-              "type": "value",
               "options": {
-                "0": { "text": "DOWN", "color": "red" },
-                "1": { "text": "UP", "color": "green" }
-              }
+                "0": {
+                  "color": "red",
+                  "text": "DOWN"
+                },
+                "1": {
+                  "color": "green",
+                  "text": "UP"
+                }
+              },
+              "type": "value"
             }
-          ]
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 3,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.4.1",
+      "targets": [
+        {
+          "expr": "up{job=\"financial-analysis\"}",
+          "instant": true,
+          "refId": "A"
         }
-      }
+      ],
+      "title": "Application Health",
+      "type": "stat"
     },
     {
-      "type": "timeseries",
-      "title": "Inference Latency",
       "description": "Calculates the average inference latency (seconds) per image",
-      "gridPos": { "h": 6, "w": 10, "x": 14, "y": 0 },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Latency (sec)",
+            "axisPlacement": "left",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 10,
+        "x": 3,
+        "y": 0
+      },
+      "id": 2,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.4.1",
       "targets": [
         {
           "expr": "sum by (mode) (rate(app_inference_latency_seconds_sum[1m])) / sum by (mode) (rate(app_inference_latency_seconds_count[1m]))",
@@ -44,26 +183,91 @@
           "refId": "A"
         }
       ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "s",
-          "custom": {
-            "axisLabel": "Latency (sec)",
-            "axisPlacement": "left",
-            "drawStyle": "line",
-            "lineWidth": 2
-          }
-        }
-      },
-      "options": {
-        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }
-      }
+      "title": "Inference Latency",
+      "type": "timeseries"
     },
     {
-      "type": "timeseries",
-      "title": "System CPU Utilization",
       "description": "Tracks host CPU usage",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 6 },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Utilization (%)",
+            "axisPlacement": "left",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 20,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 11,
+        "x": 13,
+        "y": 0
+      },
+      "id": 3,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.4.1",
       "targets": [
         {
           "expr": "100 - (avg by(instance) (rate(node_cpu_seconds_total{mode=\"idle\"}[1m])) * 100)",
@@ -71,28 +275,154 @@
           "refId": "A"
         }
       ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "percent",
-          "min": 0,
-          "max": 100,
-          "custom": {
-            "axisLabel": "Utilization (%)",
-            "axisPlacement": "left",
-            "drawStyle": "line",
-            "fillOpacity": 20
-          }
-        }
-      },
-      "options": {
-        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }
-      }
+      "title": "System CPU Utilization",
+      "type": "timeseries"
     },
     {
-      "type": "timeseries",
-      "title": "System & App Memory Utilization",
+      "description": "Number of images currently to be processed",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "value"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "orange",
+                "value": 10
+              },
+              {
+                "color": "red",
+                "value": 20
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 3,
+        "x": 0,
+        "y": 7
+      },
+      "id": 6,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.4.1",
+      "targets": [
+        {
+          "expr": "sum(app_active_requests_current)",
+          "instant": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Active Requests",
+      "type": "stat"
+    },
+    {
       "description": "Monitors available host memory",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 6 },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Memory (Bytes)",
+            "axisPlacement": "left",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 10,
+        "x": 3,
+        "y": 7
+      },
+      "id": 4,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.4.1",
       "targets": [
         {
           "expr": "node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes",
@@ -105,74 +435,105 @@
           "refId": "B"
         }
       ],
+      "title": "System & App Memory Utilization",
+      "type": "timeseries"
+    },
+    {
+      "description": "Total incoming requests vs Exceptions",
       "fieldConfig": {
         "defaults": {
-          "unit": "bytes",
-          "min": 0,
+          "color": {
+            "mode": "palette-classic"
+          },
           "custom": {
-            "axisLabel": "Memory (Bytes)",
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Count / Minute",
             "axisPlacement": "left",
-            "drawStyle": "line"
-          }
-        }
-      },
-      "options": {
-        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }
-      }
-    },
-    {
-      "type": "table",
-      "title": "Recent Alert Events",
-      "description": "Displays all active alerts handled by Alertmanager",
-      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 14 },
-      "targets": [
-        {
-          "expr": "ALERTS",
-          "format": "table",
-          "instant": true,
-          "refId": "A"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "custom": {
-            "align": "auto"
-          }
-        }
-      }
-    },
-    {
-      "type": "stat",
-      "title": "Active Requests",
-      "description": "Number of images currently to be processed",
-      "gridPos": { "h": 6, "w": 4, "x": 0, "y": 14 },
-      "targets": [
-        {
-          "expr": "sum(app_active_requests_current)",
-          "refId": "A",
-          "instant": true
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "none",
-          "color": { "mode": "value" },
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "green", "value": null },
-              { "color": "orange", "value": 10 },
-              { "color": "red", "value": 20 }
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*Errors.*"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "red",
+                  "mode": "fixed"
+                }
+              }
             ]
           }
+        ]
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 11,
+        "x": 13,
+        "y": 7
+      },
+      "id": 7,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
         }
-      }
-    },
-    {
-      "type": "timeseries",
-      "title": "Request vs. Exception Rate",
-      "description": "Total incoming requests vs Exceptions",
-      "gridPos": { "h": 6, "w": 10, "x": 4, "y": 14 },
+      },
+      "pluginVersion": "12.4.1",
       "targets": [
         {
           "expr": "sum by (mode) (increase(app_total_requests_total[1m]))",
@@ -185,34 +546,89 @@
           "refId": "B"
         }
       ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "custom": {
-            "axisLabel": "Count / Minute",
-            "axisPlacement": "left",
-            "drawStyle": "line",
-            "lineWidth": 2
-          }
-        },
-        "overrides": [
-          {
-            "matcher": { "id": "byRegexp", "options": ".*Errors.*" },
-            "properties": [
-              { "id": "color", "value": { "mode": "fixed", "fixedColor": "red" } }
-            ]
-          }
-        ]
-      },
-      "options": {
-        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }
-      }
+      "title": "Request vs. Exception Rate",
+      "type": "timeseries"
     },
     {
-      "type": "timeseries",
-      "title": "Disk Read",
       "description": "Disk Read Latency",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 28},
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Count / Minute",
+            "axisPlacement": "left",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "Bps"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 14
+      },
+      "id": 8,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.4.1",
       "targets": [
         {
           "expr": "rate(node_disk_read_bytes_total[1m])",
@@ -225,28 +641,89 @@
           "refId": "B"
         }
       ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "Bps",
-          "custom": {
-            "axisLabel": "Count / Minute",
-            "axisPlacement": "left",
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "lineWidth": 2
-          }
-        }
-      },
-      "options": {
-        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
-        "tooltip": {"mode": "multi"}
-      }
+      "title": "Disk Read",
+      "type": "timeseries"
     },
     {
-      "type": "timeseries",
-      "title": "CPU Context Switch",
       "description": "Context Switching per sec in CPU",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 28 },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Operations / Second",
+            "axisPlacement": "left",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 14
+      },
+      "id": 9,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.4.1",
       "targets": [
         {
           "expr": "rate(node_context_switches_total[1m])",
@@ -255,56 +732,93 @@
         },
         {
           "expr": "rate(node_intr_total[1m])",
-          "legendFormat": "Interrupts / sec"
+          "legendFormat": "Interrupts / sec",
+          "refId": "B"
         }
       ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "ops",
-          "custom": {
-            "axisLabel": "Operations / Second",
-            "axisPlacement": "left",
-            "drawStyle": "line",
-            "lineWidth": 2
-          }
-        }
-      },
-      "options": {
-        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
-        "tooltip": {"mode": "multi"}
-      }
+      "title": "CPU Context Switch",
+      "type": "timeseries"
     },
     {
-      "type": "timeseries",
-      "title": "Data Drift",
-      "description": "Rate of Change of Data Distribution seen by the Topic Model",
-      "gridPos": { "h": 6, "w": 10, "x": 14, "y": 0 },
-      "targets": [
-        {
-          "expr": "sum by (class_name) (rate(topic_model_input_classes_total[5m]))",
-          "legendFormat": "{{class_name}}",
-          "refId": "A"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "s",
-          "custom": {
-            "axisPlacement": "left",
-            "drawStyle": "line",
-            "lineWidth": 2
-          }
-        }
-      },
-      "options": {
-        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }
-      }
-    },
-    {
-      "type": "timeseries",
-      "title": "Data Drift",
       "description": "Rate of Change of Data Distribution seen by the Sentiment model",
-      "gridPos": { "h": 6, "w": 10, "x": 14, "y": 0 },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "left",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 9,
+        "x": 0,
+        "y": 22
+      },
+      "id": 11,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.4.1",
       "targets": [
         {
           "expr": "sum by (class_name) (rate(sent_model_input_classes_total[5m]))",
@@ -312,25 +826,56 @@
           "refId": "A"
         }
       ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "s",
-          "custom": {
-            "axisPlacement": "left",
-            "drawStyle": "line",
-            "lineWidth": 2
-          }
-        }
-      },
-      "options": {
-        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }
-      }
+      "title": "Data Drift",
+      "type": "timeseries"
     },
     {
-      "type": "barchart",
-      "title": "Current Topic Data Distribution",
       "description": "Cumulative distribution of the data among topic classes seen till now",
-      "gridPos": { "h": 6, "w": 10, "x": 14, "y": 0 },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 6,
+        "x": 9,
+        "y": 22
+      },
+      "id": 13,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "pieType": "pie",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "sort": "desc",
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.4.1",
       "targets": [
         {
           "expr": "sum by (class_name) (topic_model_input_classes_total)",
@@ -338,143 +883,234 @@
           "refId": "A"
         }
       ],
-      "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "palette-classic" },
-          "custom": { "hideFrom": { "legend": false, "tooltip": false, "viz": false } }
-        },
-        "overrides": []
-      },
-      "options": {
-        "orientation": "auto",
-        "showValue": "never",
-        "groupWidth": 0.6,
-        "barWidth": 0.9,
-        "barRadius": 0,
-        "stacking": "none",
-        "tooltipOptions": { "mode": "single" }
-      }
-    },
-    {
-      "type": "piechart",
       "title": "Current Topic Data Distribution (Pie Chart)",
-      "description": "Cumulative distribution of the data among topic classes seen till now",
-      "gridPos": { "h": 6, "w": 10, "x": 14, "y": 0 },
-      "targets": [
-        {
-          "expr": "sum by (class_name) (topic_model_input_classes_total)",
-          "legendFormat": "{{class_name}}",
-          "refId": "A"
-        }
-      ]
+      "type": "piechart"
     },
     {
-      "type": "barchart",
-      "title": "Current Sentiment Data Distribution",
       "description": "Cumulative distribution of the data among sentiment classes seen till now",
-      "gridPos": { "h": 6, "w": 10, "x": 14, "y": 0 },
-      "targets": [
-        {
-          "expr": "sum by (class_name) (sent_model_input_classes_total)",
-          "legendFormat": "{{class_name}}",
-          "refId": "A"
-        }
-      ],
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "palette-classic" },
-          "custom": { "hideFrom": { "legend": false, "tooltip": false, "viz": false } }
-        },
-        "overrides": []
-      },
-      "options": {
-        "orientation": "auto",
-        "showValue": "never",
-        "groupWidth": 0.6,
-        "barWidth": 0.9,
-        "barRadius": 0,
-        "stacking": "none",
-        "tooltipOptions": { "mode": "single" }
-      }
-    },
-    {
-      "type": "piechart",
-      "title": "Current Sentiment Data Distribution (Pie Chart)",
-      "description": "Cumulative distribution of the data among sentiment classes seen till now",
-      "gridPos": { "h": 6, "w": 10, "x": 14, "y": 0 },
-      "targets": [
-        {
-          "expr": "sum by (class_name) (sent_model_input_classes_total)",
-          "legendFormat": "{{class_name}}",
-          "refId": "A"
-        }
-      ]
-    },
-    {
-      "type": "timeseries",
-      "title": "Model Reliability",
-      "description": "How reliable are each of the models",
-      "gridPos": { "h": 6, "w": 10, "x": 14, "y": 0 },
-      "targets": [
-        {
-          "expr": "(sum by (model_name) (rate(model_inference_status_total{status!=\"success\"}[5m]))/sum by (model_name) (rate(model_inference_status_total[5m]))) * 100",
-          "legendFormat": "{{model_name}}",
-          "refId": "A"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "s",
+          "color": {
+            "mode": "palette-classic"
+          },
           "custom": {
-            "axisPlacement": "left",
-            "drawStyle": "line",
-            "lineWidth": 2
-          }
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 9,
+        "x": 15,
+        "y": 22
+      },
+      "id": 15,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "pieType": "pie",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "sort": "desc",
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
         }
       },
-      "options": {
-        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }
-      }
-    },
-    {
-      "type": "barchart",
-      "title": "Topic Data Drift Distribution",
-      "description": "Drift in the topic class distribution",
-      "gridPos": { "h": 6, "w": 10, "x": 14, "y": 0 },
+      "pluginVersion": "12.4.1",
       "targets": [
         {
-          "expr": "sum by (class_name) (rate(topic_model_input_classes_total[1h])) / scalar(sum(rate(topic_model_input_classes_total[1h])))",
-          "legendFormat": "{{class_name}}",
-          "refId": "A"
-        },
-        {
-          "expr": "topic_model_baseline_class_distribution",
+          "expr": "sum by (class_name) (sent_model_input_classes_total)",
           "legendFormat": "{{class_name}}",
           "refId": "A"
         }
       ],
+      "title": "Current Sentiment Data Distribution (Pie Chart)",
+      "type": "piechart"
+    },
+    {
+      "description": "Rate of Change of Data Distribution seen by the Topic Model",
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "palette-classic" },
-          "custom": { "hideFrom": { "legend": false, "tooltip": false, "viz": false } }
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "left",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "s"
         },
         "overrides": []
       },
+      "gridPos": {
+        "h": 10,
+        "w": 9,
+        "x": 0,
+        "y": 30
+      },
+      "id": 10,
       "options": {
-        "orientation": "auto",
-        "showValue": "never",
-        "groupWidth": 0.6,
-        "barWidth": 0.9,
-        "barRadius": 0,
-        "stacking": "none",
-        "tooltipOptions": { "mode": "single" }
-      }
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.4.1",
+      "targets": [
+        {
+          "expr": "sum by (class_name) (rate(topic_model_input_classes_total[5m]))",
+          "legendFormat": "{{class_name}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Data Drift",
+      "type": "timeseries"
     },
     {
-      "type": "barchart",
-      "title": "Sentiment Data Drift Distribution",
       "description": "Drift in the sentiment class distribution",
-      "gridPos": { "h": 6, "w": 10, "x": 14, "y": 0 },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineWidth": 1,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 9,
+        "y": 32
+      },
+      "id": 18,
+      "options": {
+        "barRadius": 0,
+        "barWidth": 0.9,
+        "fullHighlight": false,
+        "groupWidth": 0.6,
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "orientation": "auto",
+        "showValue": "never",
+        "stacking": "none",
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        },
+        "tooltipOptions": {
+          "mode": "single"
+        },
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0
+      },
+      "pluginVersion": "12.4.1",
       "targets": [
         {
           "expr": "sum by (class_name) (rate(sent_model_input_classes_total[1h])) / scalar(sum(rate(sent_model_input_classes_total[1h])))",
@@ -487,114 +1123,362 @@
           "refId": "A"
         }
       ],
+      "title": "Sentiment Data Drift Distribution",
+      "type": "barchart"
+    },
+    {
+      "description": "Drift in the topic class distribution",
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "palette-classic" },
-          "custom": { "hideFrom": { "legend": false, "tooltip": false, "viz": false } }
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineWidth": 1,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
         },
         "overrides": []
       },
+      "gridPos": {
+        "h": 8,
+        "w": 7,
+        "x": 17,
+        "y": 32
+      },
+      "id": 17,
       "options": {
+        "barRadius": 0,
+        "barWidth": 0.9,
+        "fullHighlight": false,
+        "groupWidth": 0.6,
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
         "orientation": "auto",
         "showValue": "never",
-        "groupWidth": 0.6,
-        "barWidth": 0.9,
-        "barRadius": 0,
         "stacking": "none",
-        "tooltipOptions": { "mode": "single" }
-      }
-    },
-    {
-      "type": "stat",
-      "title": "Overall Topic PSI",
-      "description": "PSI across all classes in Topic Modelling",
-      "gridPos": { "h": 6, "w": 4, "x": 0, "y": 0 },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        },
+        "tooltipOptions": {
+          "mode": "single"
+        },
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0
+      },
+      "pluginVersion": "12.4.1",
       "targets": [
         {
-          "expr": "sum((( (sum by (class_name) (rate(topic_model_input_classes_total[1h])) / scalar(sum(rate(topic_model_input_classes_total[1h])))) + 1e-5 )- ( model_baseline_class_dist + 1e-5 )) * ln(( (sum by (class_name) (rate(topic_model_input_classes_total[1h])) / scalar(sum(rate(topic_model_input_classes_total[1h])))) + 1e-5 )/ ( model_baseline_class_dist + 1e-5 )))",
-          "refId": "A",
-          "instant": true
+          "expr": "sum by (class_name) (rate(topic_model_input_classes_total[1h])) / scalar(sum(rate(topic_model_input_classes_total[1h])))",
+          "legendFormat": "{{class_name}}",
+          "refId": "A"
+        },
+        {
+          "expr": "topic_model_baseline_class_distribution",
+          "legendFormat": "{{class_name}}",
+          "refId": "A"
         }
       ],
+      "title": "Topic Data Drift Distribution",
+      "type": "barchart"
+    },
+    {
+      "description": "PSI across all classes in Sentiment Analysis",
       "fieldConfig": {
         "defaults": {
           "mappings": [
             {
-              "type": "range",
               "options": {
                 "from": 0,
-                "to": 0.1,
-                "result": { "text": "MILD", "color": "green" }
-              }
+                "result": {
+                  "color": "green",
+                  "text": "MILD"
+                },
+                "to": 0.1
+              },
+              "type": "range"
             },
             {
-              "type": "range",
               "options": {
                 "from": 0.1,
-                "to": 0.2,
-                "result": { "text": "MODERATE", "color": "yellow" }
-              }
+                "result": {
+                  "color": "yellow",
+                  "text": "MODERATE"
+                },
+                "to": 0.2
+              },
+              "type": "range"
             },
             {
-              "type": "range",
               "options": {
                 "from": 0.2,
-                "to": 100,
-                "result": { "text": "SEVERE", "color": "red" }
-              }
+                "result": {
+                  "color": "red",
+                  "text": "SEVERE"
+                },
+                "to": 100
+              },
+              "type": "range"
             }
-          ]
-        }
-      }
-    },
-    {
-      "type": "stat",
-      "title": "Overall Sentiment PSI",
-      "description": "PSI across all classes in Sentiment Analysis",
-      "gridPos": { "h": 6, "w": 4, "x": 0, "y": 0 },
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 3,
+        "x": 0,
+        "y": 40
+      },
+      "id": 20,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.4.1",
       "targets": [
         {
           "expr": "sum((( (sum by (class_name) (rate(sent_model_input_classes_total[1h])) / scalar(sum(rate(sent_model_input_classes_total[1h])))) + 1e-5 )- ( model_baseline_class_distribution + 1e-5 )) * ln(( (sum by (class_name) (rate(topic_model_input_classes_total[1h])) / scalar(sum(rate(topic_model_input_classes_total[1h])))) + 1e-5 )/ ( sent_model_baseline_data_dist + 1e-5 )))",
-          "refId": "A",
-          "instant": true
+          "instant": true,
+          "refId": "A"
         }
       ],
-      "fieldConfig": {
-        "defaults": {
-          "mappings": [
-            {
-              "type": "range",
-              "options": {
-                "from": 0,
-                "to": 0.1,
-                "result": { "text": "MILD", "color": "green" }
-              }
-            },
-            {
-              "type": "range",
-              "options": {
-                "from": 0.1,
-                "to": 0.2,
-                "result": { "text": "MODERATE", "color": "yellow" }
-              }
-            },
-            {
-              "type": "range",
-              "options": {
-                "from": 0.2,
-                "to": 100,
-                "result": { "text": "SEVERE", "color": "red" }
-              }
-            }
-          ]
-        }
-      }
+      "title": "Overall Sentiment PSI",
+      "type": "stat"
     },
     {
-      "type": "timeseries",
-      "title": "Topic Model Accuracy Decay",
-      "description": "Calculates the topic model accuracy decay with time",
-      "gridPos": { "h": 6, "w": 10, "x": 14, "y": 0 },
+      "description": "How reliable are each of the models",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "left",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 10,
+        "x": 3,
+        "y": 40
+      },
+      "id": 16,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.4.1",
+      "targets": [
+        {
+          "expr": "(sum by (model_name) (rate(model_inference_status_total{status!=\"success\"}[5m]))/sum by (model_name) (rate(model_inference_status_total[5m]))) * 100",
+          "legendFormat": "{{model_name}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Model Reliability",
+      "type": "timeseries"
+    },
+    {
+      "description": "Calculates the model accuracy decay with time",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Latency (sec)",
+            "axisPlacement": "left",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 11,
+        "x": 13,
+        "y": 40
+      },
+      "id": 21,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.4.1",
       "targets": [
         {
           "expr": "sum by (model_name) (rate(model_prediction_correctness_total{status=\"correct\"}[24h]))/sum by (model_name) (rate(model_feedback_received_total[24h]))",
@@ -602,23 +1486,164 @@
           "refId": "A"
         }
       ],
+      "title": "Model Accuracy Decay",
+      "type": "timeseries"
+    },
+    {
+      "description": "PSI across all classes in Topic Modelling",
       "fieldConfig": {
         "defaults": {
-          "unit": "s",
-          "custom": {
-            "axisLabel": "Latency (sec)",
-            "axisPlacement": "left",
-            "drawStyle": "line",
-            "lineWidth": 2
+          "mappings": [
+            {
+              "options": {
+                "from": 0,
+                "result": {
+                  "color": "green",
+                  "text": "MILD"
+                },
+                "to": 0.1
+              },
+              "type": "range"
+            },
+            {
+              "options": {
+                "from": 0.1,
+                "result": {
+                  "color": "yellow",
+                  "text": "MODERATE"
+                },
+                "to": 0.2
+              },
+              "type": "range"
+            },
+            {
+              "options": {
+                "from": 0.2,
+                "result": {
+                  "color": "red",
+                  "text": "SEVERE"
+                },
+                "to": 100
+              },
+              "type": "range"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
           }
-        }
+        },
+        "overrides": []
       },
+      "gridPos": {
+        "h": 8,
+        "w": 3,
+        "x": 0,
+        "y": 48
+      },
+      "id": 19,
       "options": {
-        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }
-      }
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.4.1",
+      "targets": [
+        {
+          "expr": "sum((( (sum by (class_name) (rate(topic_model_input_classes_total[1h])) / scalar(sum(rate(topic_model_input_classes_total[1h])))) + 1e-5 )- ( model_baseline_class_dist + 1e-5 )) * ln(( (sum by (class_name) (rate(topic_model_input_classes_total[1h])) / scalar(sum(rate(topic_model_input_classes_total[1h])))) + 1e-5 )/ ( model_baseline_class_dist + 1e-5 )))",
+          "instant": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Overall Topic PSI",
+      "type": "stat"
+    },
+    {
+      "description": "Displays all active alerts handled by Alertmanager",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "footer": {
+              "reducers": []
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 21,
+        "x": 3,
+        "y": 48
+      },
+      "id": 5,
+      "options": {
+        "cellHeight": "sm",
+        "showHeader": true
+      },
+      "pluginVersion": "12.4.1",
+      "targets": [
+        {
+          "expr": "ALERTS",
+          "format": "table",
+          "instant": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Recent Alert Events",
+      "type": "table"
     }
   ],
+  "preload": false,
   "templating": {
     "list": []
-  }
+  },
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "uid": "adq2pms",
+  "version": 2,
+  "weekStart": ""
 }

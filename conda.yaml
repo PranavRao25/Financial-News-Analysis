@@ -15,11 +15,11 @@ dependencies:
   - pillow
   - pip
   - pip:
-    - mlflow==3.10.1
+    - mlflow=3.10.1
     - Flask
     - python-dotenv
     - psutil
     - datasets
+    - transformers
     - evaluate
     - accelerate
-    - transformers

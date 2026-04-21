@@ -13,8 +13,9 @@ parent = Path(__file__).resolve().parent.parent.parent
 
 load_dotenv(parent / ".env")
 
-with open(parent / "config/config.yaml", 'r') as f:
+with open(parent / "config/config.yaml", "r") as f:
     raw_path = f.read()
+
 expanded_yaml = os.path.expandvars(raw_path)
 configs = yaml.full_load(expanded_yaml)
 

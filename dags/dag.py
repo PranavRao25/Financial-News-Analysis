@@ -15,7 +15,7 @@ from pathlib import Path
 
 parent = Path(__file__).resolve().parent.parent
 
-with open(parent / "config.yaml", "r") as f:
+with open(parent / "config/config.yaml", "r") as f:
     configs = yaml.full_load(f)
 default_args = configs["default_args"]
 default_args["retry_delay"] = timedelta(configs["default_args"]["retry_delay"])

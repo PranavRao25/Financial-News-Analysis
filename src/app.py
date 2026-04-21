@@ -1,17 +1,15 @@
-import uuid
 from flask import Flask, request, render_template, jsonify, flash, redirect, url_for, Response
 from prometheus_client import start_http_server, Counter, Gauge, Histogram, Info, Summary, generate_latest, CONTENT_TYPE_LATEST
 from werkzeug.utils import secure_filename
 import os
-from topic.topic_inference import TopicModel
-from sentiment.inference import SentimentModel
+import requests
 import json
 from uuid import uuid4
+import requests
 import io
 from io import StringIO
 import psutil
 import csv
-import requests
 import zipfile
 import cv2
 import pytesseract
@@ -19,15 +17,17 @@ from PIL import Image
 import yaml
 from pathlib import Path
 import logging
-from cachetools import TTLCache
 import redis
+
+
+#### ADD REDIS TO THE DOCKER AND CONDA.YAML
 
 print("Financial News Analysis app started")
 
 app = Flask(__name__)
 parent = Path(__file__).resolve().parent.parent
 
-with open(parent / "configs/config.yaml", 'r') as f:
+with open(parent / "config/config.yaml", 'r') as f:
     configs = yaml.full_load(f)
 
 # title - Financial News Analysis
@@ -72,7 +72,7 @@ def get_metrics():
         "sent_input_label": Counter(
             "sent_model_input_classes_total",
             "Distribution of classes seen by the Sentiment model",
-            labelnames=sent_mapping.values()
+            labelnames=["class_name"]
         ),
         "model_reliability": Counter(
             "model_inference_status_total",
@@ -82,12 +82,12 @@ def get_metrics():
         "topic_baseline_data_dist": Gauge(
             "topic_model_baseline_data_dist",
             "Baseline Topic class distribution from training data",
-            labelnames=["classname"]
+            labelnames=["class_name"]
         ),
         "sent_baseline_data_dist": Gauge(
             "sent_model_baseline_data_dist",
             "Baseline Sentiment class distribution from training data",
-            labelnames=["classname"]
+            labelnames=["class_name"]
         ),
         "feedback_received_total": Counter(
             "model_feedback_received_total",
@@ -102,7 +102,7 @@ def get_metrics():
         "confusion_matrix": Counter(
             "model_confusion_matrix_total",
             "Real-time confusion matrix components",
-            labelnames=["model_name", "true_class", "predicted_class"]
+            labelnames=["model_name", "true_class", "label"]
         )
     }
 
@@ -114,6 +114,7 @@ def init_topic_model():
 
 def init_sentiment_model():
     print("Init Sentiment model")
+    # sentiment = SentimentModel(path)
     serve_port = configs["deployment"]["sent_serve"]
     MLFLOW_URI = f"http://127.0.0.1:{serve_port}/invocations"
     return MLFLOW_URI
@@ -132,22 +133,26 @@ def analyse(file, ext):
     if not txt.strip():  # text empty
         raise ValueError("Text empty")
     
-    sent_label, sent_conf = infer(txt, "sentiment", sent_model_name, sentiment, sent_mapping)
+    sent_label, sent_conf = infer(txt, "sentiment", sent_model_name, sent_uri, sent_mapping)
+
     prod_metrics["sent_input_label"].labels(class_name=sent_label).inc() # type: ignore
-    topic_label, topic_conf = infer(txt, "topic", topic_model_name, topic, topic_mapping)
-    prod_metrics["topic_input_label"].labels(class_name=topic_label).inc() # type: ignore
+    # topic_label, topic_conf = infer(txt, "topic", topic_model_name, topic_uri, topic_mapping)
+    # prod_metrics["topic_input_label"].labels(class_name=topic_label).inc() # type: ignore
 
     # cache save
     pred_id = str(uuid4())
-    prediction_cache.hset(name=pred_id, mapping={"sentiment": sent_label, "topic": topic_label})
+    prediction_cache.hset(name=pred_id, mapping={"sentiment": sent_label})#, "topic": topic_label})
+
+    label = prediction_cache.hget(pred_id, "sentiment")
+    print(label)
 
     return {
-        "sentiment": {"label": sent_label, "confidence": sent_conf},
-        "topic": {"label": topic_label, "confidence": topic_conf},
+        "sentiment": {"label": sent_label, "confidence": sent_conf, "model": sent_model_name},
+        # "topic": {"label": topic_label, "confidence": topic_conf, "model": topic_model_name},
         "text": txt
     }
 
-def infer(txt, mode, model_name, model, mapping):
+def infer(txt, mode, model_name, uri, mapping):
     prod_metrics["requests"].labels(mode=mode).inc() # type: ignore
 
     label = "Unknown"
@@ -158,30 +163,36 @@ def infer(txt, mode, model_name, model, mapping):
             payload = {"inputs": [txt]}
             headers = {"Content-Type": "application/json"}
 
-            response = requests.post(model, json=payload, headers=headers)
+            response = requests.post(uri, json=payload, headers=headers)
 
             if response.status_code != 200:
                 raise Exception(f"MLFlow API Error {response.status_code}: {response.text}")
-            
-            results = response.json().get("prediction", response.json())
-            for item in results:
-                label = str(mapping[str(item["predicted_class"])])
+
+            results = response.json().get("predictions", response.json())[0]
+            print(results)  # {'0': {'label': "", 'confidence': int}, ...}
+            results = [
+                {"label": results[item]["label"].split('_')[1], "confidence": results[item]["score"]}
+                for item in results
+                ]
+
+            for item in results:  # TODO: Handle multiple inputs
+                label = str(mapping[str(item["label"])])
                 confidence = item["confidence"]
+            print(label, confidence)
     except Exception as e:
         error_name = type(e).__name__
-        # st.error(f"Error in processing : {error_name}")
-        # st.write(metrics)
-        # st.write(mode)
+        logging.error(f"Error during {mode} inference: {error_name}")
         prod_metrics["errors"].labels(mode=mode, error_types=error_name).inc() # type: ignore
         prod_metrics["model_reliability"].labels(model_name=model_name, status="error").inc() # type: ignore
+        raise e
     finally:
         prod_metrics["model_reliability"].labels(model_name=model_name, status="success").inc() # type: ignore
         prod_metrics["active_requests"].labels(session_id=session_id).dec() # type: ignore
 
     return label, confidence
 
-with open(parent / configs["topic"]["data"]["mapping"], "r") as f:
-    topic_mapping = json.load(f)
+# with open(parent / configs["topic"]["data"]["mapping"], "r") as f:
+#     topic_mapping = json.load(f)
 
 with open(parent / configs["sentiment"]["data"]["mapping"], "r") as f:
     sent_mapping = json.load(f)
@@ -195,15 +206,18 @@ prediction_cache = redis.Redis(host="localhost", port=configs["monitoring"]["por
 prod_metrics = get_metrics()
 prod_metrics["model_memory_usage"].set(process.memory_info().rss) # type: ignore
 
-for label in topic_mapping.values():
-    prod_metrics["topic_input_label"].labels(class_name=str(label)).inc(0) # type: ignore
+# for label in topic_mapping.values():
+#     prod_metrics["topic_input_label"].labels(class_name=str(label)).inc(0) # type: ignore
 
-with open(parent / configs["topic"]["data"]["dist"], "r") as f:
-    reader = csv.reader(f)
-    for row in reader:
-        if len(row) == 2:
-            class_name, dist_val = row[0], float(row[1])
-            prod_metrics["topic_baseline_data_dist"].labels(class_name=class_name).set(dist_val) # type: ignore
+for label in sent_mapping.values():
+    prod_metrics["sent_input_label"].labels(class_name=str(label)).inc(0) # type: ignore
+
+# with open(parent / configs["topic"]["data"]["dist"], "r") as f:
+#     reader = csv.reader(f)
+#     for row in reader:
+#         if len(row) == 2:
+#             class_name, dist_val = row[0], float(row[1])
+#             prod_metrics["topic_baseline_data_dist"].labels(class_name=class_name).set(dist_val) # type: ignore
 
 with open(parent / configs["sentiment"]["data"]["dist"], "r") as f:
     reader = csv.reader(f)
@@ -212,17 +226,17 @@ with open(parent / configs["sentiment"]["data"]["dist"], "r") as f:
             class_name, dist_val = row[0], float(row[1])
             prod_metrics["sent_baseline_data_dist"].labels(class_name=class_name).set(dist_val) # type: ignore
 
-topic_model_name = configs["topic"]["model"]["name"]
-topic_model_path = configs["topic"]["model"]["path"]
-topic = init_topic_model()
+# topic_model_name = configs["topic"]["model"]["name"]
+# topic_model_path = configs["topic"]["model"]["path"]
+# topic_uri = init_topic_model()
 
 sent_model_name = configs["sentiment"]["model"]["name"]
 sent_model_path = configs["sentiment"]["model"]["path"]
-sentiment = init_sentiment_model()
+sent_uri = init_sentiment_model()
 
 port = configs["deployment"]["port"]
 
-session_id = uuid.uuid4()
+session_id = uuid4()
 app.config["SESSION_ID"] = session_id
 app.config["UPLOAD_DIR"] = parent / "output"
 ALLOWED_EXTENSIONS = {"pdf", "txt", "jpeg", "jpg", "png"}
@@ -253,30 +267,19 @@ def root():
             
             try:
                 output = analyse(file, ext)
+                print(output)
+
                 return output, 200
             except Exception as e:
                 logging.error(f"{e}")
                 return jsonify({"message": f"Cannot analyse file ; {e}"}), 500
         else:
             return jsonify({"message": "No selected file"}), 400
-        # for f in file:
-        #     if f and f.filename:
-        #         filename = secure_filename(f.filename)
-        #         ext = filename.split('.')[-1]
-        #         if ext not in ALLOWED_EXTENSIONS:
-        #             return jsonify({"message": "File type not allowed"}), 400
-                
-        #         try:
-        #             output = analyse(file, ext)
-        #             return output, 200
-        #         except Exception as e:
-        #             logging.error(f"{e}")
-        #             return jsonify({"message": f"Cannot analyse file ; {e}"}), 500
-        #     else:
-        #         return jsonify({"message": "No selected file"}), 400
     else:
-        return render_template("index.html")
-        
+        return render_template("index.html",
+                               sent_model=sent_model_name,
+                               topic_model="topic_model_name")
+
 @app.route("/health", methods=["GET", "POST"])
 def health():
     return Response(generate_latest(), mimetype=CONTENT_TYPE_LATEST)
@@ -297,22 +300,22 @@ def ingest():
         return jsonify({"error": "No data found"}), 404
     
     pred_id = data.get("pred_id", "")
-    model_name = data.get("model_name", "")
+    model_name = data.get("model_name", "")  # has to be sentiment / topic
     true_label = data.get("true_label", "")
 
     if pred_id not in prediction_cache:
         return jsonify({"error": "Prediction ID not found or expired"}), 404
     
-    prediction = prediction_cache.hget(pred_id, model_name)
+    label = prediction_cache.hget(pred_id, model_name)
 
-    if not prediction:
+    if not label:
         return jsonify({"error": f"No prediction found for the model {model_name}"}), 404
     
-    status = "correct" if (true_label == prediction) else "wrong"
+    status = "correct" if (true_label == label) else "wrong"
 
     prod_metrics["feedback_received_total"].labels(model_name=model_name).inc() # type: ignore
     prod_metrics["prediction_correctness"].labels(model_name=model_name, status=status).inc() # type: ignore
-    prod_metrics["confusion_matrix"].labels(model_name=model_name, true_class=true_label, predicted_class=prediction)
+    prod_metrics["confusion_matrix"].labels(model_name=model_name, true_class=true_label, label=label)
     
     return jsonify({"message": "Ground Truth logged", "status": status}), 200
 

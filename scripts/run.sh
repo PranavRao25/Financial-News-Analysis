@@ -4,6 +4,8 @@ cleanup() {
     echo -e "\n[Stack Teardown] Catching termination signal..."
     echo "[Stack Teardown] Stopping Grafana Server..."
     sudo systemctl stop grafana-server
+    echo "[Stack Teardown] Stopping Airflow Server..."
+    docker compose down --volumes --rmi all
     echo "[Stack Teardown] All services gracefully stopped."
     exit 0
 }

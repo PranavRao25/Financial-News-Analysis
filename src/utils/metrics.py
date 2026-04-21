@@ -1,6 +1,8 @@
 import evaluate
 import numpy as np
 from scipy.special import softmax
+from pathlib import Path
+import yaml
 from sklearn.metrics import average_precision_score, confusion_matrix
 
 _F1_METRIC = evaluate.load("f1")  # TODO: CHANGE THE METRIC
@@ -9,6 +11,13 @@ _PRECISION_METRIC = evaluate.load("precision")
 _RECALL_METRIC = evaluate.load("recall")
 _MCC_METRIC = evaluate.load("matthews_correlation")
 _ROC_METRIC = evaluate.load("roc_auc")
+
+parent = Path(__file__).resolve().parent.parent.parent
+
+with open(parent / "config/config.yaml", "r") as f:
+    configs = yaml.full_load(f)
+
+no_classes = configs["sentiment"]["data"]["no_classes"]
 
 def expected_calibration_error(y_true, y_prob, n_bins=10):
     """
@@ -97,7 +106,7 @@ def metrics():
             average="weighted"
         )
 
-        cm = confusion_matrix(labels, predictions)
+        cm = confusion_matrix(labels, predictions, labels=np.arange(no_classes))
 
         return {
             "accuracy": accuracy["accuracy"], # type: ignore

@@ -1,0 +1,66 @@
+stages:
+  clean:
+    wdir: ../../
+    cmd: python src/sentiment/sent_data_clean.py
+    deps:
+      - src/sentiment/sent_data_clean.py
+      - data/sentiment/raw/data.txt
+    params:
+      - config.yaml:
+        - sentiment.data.raw
+        - sentiment.data.processed
+    outs:
+      - data/sentiment/processed/data.csv
+
+  split:
+    wdir: ../../
+    cmd: python src/sentiment/sent_data_split.py
+    deps:
+      - src/sentiment/sent_data_split.py
+      - data/sentiment/processed/data.csv
+    params:
+      - config.yaml:
+        - sentiment.data.raw
+        - sentiment.data.processed
+        - sentiment.data.split_ratio
+        - sentiment.data.random_state
+    outs:
+      - data/sentiment/processed/train.csv
+      - data/sentiment/processed/valid.csv
+      - data/sentiment/processed/test.csv
+
+  tokenize:
+    wdir: ../../
+    cmd: python src/sentiment/sent_data_tokenize.py
+    deps:
+      - src/sentiment/sent_data_tokenize.py
+      - data/sentiment/processed/train.csv
+      - data/sentiment/processed/valid.csv
+      - data/sentiment/processed/test.csv
+    params:
+      - config.yaml:
+        - sentiment.data.embed_len
+        - sentiment.data.processed
+        - sentiment.model.name
+    outs:
+      - data/sentiment/processed/train
+      - data/sentiment/processed/valid
+      - data/sentiment/processed/test
+
+  # train:
+  #   wdir: ../../
+  #   cmd: python src/sentiment/sent_train.py
+  #   deps:
+  #     - src/sentiment/sent_train.py
+  #     - data/sentiment/processed/train
+  #     - data/sentiment/processed/valid
+  #     - src/sentiment/sent_models.json
+  #   params:
+  #     - config.yaml:
+  #       - sentiment.data.processed
+  #       - sentiment.data.no_classes
+  #       - sentiment.model.name
+  #       - sentiment.model.path
+  #   outs:
+  #     - models/sentiment/v1
+      

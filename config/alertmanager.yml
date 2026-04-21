@@ -9,7 +9,6 @@ receivers:
   - name: 'web.hook'
     webhook_configs:
       - url: 'http://127.0.0.1:5002/'
-  
 inhibit_rules:
   - source_matchers: [severity="critical"]
     target_matchers: [severity="warning"]

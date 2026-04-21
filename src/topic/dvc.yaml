@@ -1,7 +1,7 @@
 stages:
   data_prep:
     wdir: ../../
-    cmd: python src/topic/topic_data_prep.py
+    cmd: python data_prep.py
     deps:
       - src/topic/topic_data_prep.py
       - data/topic/raw/train.csv
@@ -19,7 +19,7 @@ stages:
 
   data_tokenize:
     wdir: ../../
-    cmd: python src/topic/topic_data_tokenize.py
+    cmd: python data_tokenize.py
     deps:
       - src/topic/topic_data_tokenize.py
       - data/topic/processed/train.csv
@@ -34,3 +34,21 @@ stages:
       - data/topic/processed/train
       - data/topic/processed/valid
       - data/topic/processed/test
+
+  train:
+    wdir: ../../
+    cmd: python train.py
+    deps:
+      - train.py
+      - data/topic/processed/train
+      - data/topic/processed/valid
+    params:
+      - config.yaml:
+        - topic.data.processed
+        - topic.data.no_classes
+        - topic.model.name
+        - topic.model.path
+        - topic.model.hyperparams
+    outs:
+      - models/topic/v1
+      
