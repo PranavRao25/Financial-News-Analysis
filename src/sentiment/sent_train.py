@@ -23,6 +23,7 @@ from datasets import load_dataset, load_from_disk
 from transformers import (
     AutoTokenizer,
     BertTokenizer,
+    RobertaTokenizer,
     AutoModelForSequenceClassification, 
     TrainingArguments, 
     Trainer,
@@ -132,6 +133,7 @@ def train(train_dataset_path, valid_dataset_path, model_path, model_id,
     try:
         # tokenizer = AutoTokenizer.from_pretrained(model_id, use_fast=True)
         tokenizer = BertTokenizer.from_pretrained(model_id)
+        # tokenizer = RobertaTokenizer.from_pretrained(model_id)
         data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
         model = AutoModelForSequenceClassification.from_pretrained(
             model_id, 
@@ -267,8 +269,11 @@ if __name__ == "__main__":
 
             # for model in models:
             #     model_id, hyperparams = model["name"], model["hyperparams"]
+            #     train(train_dataset_path, valid_dataset_path, model_path,
+            #             model_id, no_classes, exp_name, run_name, hyperparams, device)
+
             train(train_dataset_path, valid_dataset_path, model_path,
-                    model_id, no_classes, exp_name, run_name, hyperparams, device)
+                        model_id, no_classes, exp_name, run_name, hyperparams, device)
         except Exception as e:
             print(e)
             raise e

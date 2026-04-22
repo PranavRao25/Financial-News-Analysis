@@ -5,3 +5,4 @@
 models/sentiment/v1/model.safetensors filter=lfs diff=lfs merge=lfs -text
 models/ filter=lfs diff=lfs merge=lfs -text
 models/sentiment/v3/ filter=lfs diff=lfs merge=lfs -text
+models/sentiment/v4/ filter=lfs diff=lfs merge=lfs -text
