@@ -17,14 +17,14 @@ topic:
   model:
     device: "cuda"
     name: "distilbert/distilbert-base-uncased"
-    path: "models/topic/v2"
-    output: "output/v2"
-    version: "v2"
+    path: "models/topic/v4"
+    output: "output/v4"
+    version: "v4"
     hyperparams:
       lr: 3e-5
       train_batch_size: 32
       eval_batch_size: 16
-      epochs: 1
+      epochs: 15
       weight_decay: 0.01
 
 sentiment:

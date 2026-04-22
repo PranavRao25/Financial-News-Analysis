@@ -226,7 +226,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--lr", type=float, default=configs["topic"]["model"]["hyperparams"]["lr"])
     parser.add_argument("--epochs", type=int, default=configs["topic"]["model"]["hyperparams"]["epochs"])
-    parser.add_argument("--wgt_decay", type=float, default=configs["topic"]["model"]["hyperparams"]["wgt_decay"])
+    parser.add_argument("--wgt_decay", type=float, default=configs["topic"]["model"]["hyperparams"]["weight_decay"])
     args = parser.parse_args()
 
     hyperparams = {
@@ -266,11 +266,11 @@ if __name__ == "__main__":
         try:
             # exp = mlflow.set_experiment(experiment_id=exp_id)
 
-            # for model in models:
-            #     model_id, hyperparams = model["name"], model["hyperparams"]
-            run_name = f"Topic_Train_{model_id}_{hyperparams}"
-            train(train_dataset_path, valid_dataset_path, model_path,
-                model_id, no_classes, exp_name, run_name, hyperparams, device)
+            for model in models:
+                model_id, hyperparams = model["name"], model["hyperparams"]
+                run_name = f"Topic_Train_{model_id}_{hyperparams}"
+                train(train_dataset_path, valid_dataset_path, model_path,
+                    model_id, no_classes, exp_name, run_name, hyperparams, device)
         except Exception as e:
             print(e)
             raise e

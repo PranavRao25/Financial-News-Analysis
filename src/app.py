@@ -19,7 +19,6 @@ from pathlib import Path
 import logging
 import redis
 
-
 #### ADD REDIS TO THE DOCKER AND CONDA.YAML
 
 print("Financial News Analysis app started")
@@ -114,7 +113,6 @@ def init_topic_model():
 
 def init_sentiment_model():
     print("Init Sentiment model")
-    # sentiment = SentimentModel(path)
     serve_port = configs["deployment"]["sent_serve"]
     MLFLOW_URI = f"http://127.0.0.1:{serve_port}/invocations"
     return MLFLOW_URI
@@ -136,19 +134,19 @@ def analyse(file, ext):
     sent_label, sent_conf = infer(txt, "sentiment", sent_model_name, sent_uri, sent_mapping)
 
     prod_metrics["sent_input_label"].labels(class_name=sent_label).inc() # type: ignore
-    # topic_label, topic_conf = infer(txt, "topic", topic_model_name, topic_uri, topic_mapping)
-    # prod_metrics["topic_input_label"].labels(class_name=topic_label).inc() # type: ignore
+    topic_label, topic_conf = infer(txt, "topic", topic_model_name, topic_uri, topic_mapping)
+    prod_metrics["topic_input_label"].labels(class_name=topic_label).inc() # type: ignore
 
     # cache save
     pred_id = str(uuid4())
-    prediction_cache.hset(name=pred_id, mapping={"sentiment": sent_label})#, "topic": topic_label})
+    prediction_cache.hset(name=pred_id, mapping={"sentiment": sent_label, "topic": topic_label})
 
     label = prediction_cache.hget(pred_id, "sentiment")
     print(label)
 
     return {
         "sentiment": {"label": sent_label, "confidence": sent_conf, "model": sent_model_name},
-        # "topic": {"label": topic_label, "confidence": topic_conf, "model": topic_model_name},
+        "topic": {"label": topic_label, "confidence": topic_conf, "model": topic_model_name},
         "text": txt
     }
 
@@ -171,7 +169,8 @@ def infer(txt, mode, model_name, uri, mapping):
             results = response.json().get("predictions", response.json())[0]
             print(results)  # {'0': {'label': "", 'confidence': int}, ...}
             results = [
-                {"label": results[item]["label"].split('_')[1], "confidence": results[item]["score"]}
+                {"label": results[item]["label"].split('_')[1],
+                 "confidence": results[item]["score"]}
                 for item in results
                 ]
 
@@ -191,8 +190,8 @@ def infer(txt, mode, model_name, uri, mapping):
 
     return label, confidence
 
-# with open(parent / configs["topic"]["data"]["mapping"], "r") as f:
-#     topic_mapping = json.load(f)
+with open(parent / configs["topic"]["data"]["mapping"], "r") as f:
+    topic_mapping = json.load(f)
 
 with open(parent / configs["sentiment"]["data"]["mapping"], "r") as f:
     sent_mapping = json.load(f)
@@ -206,18 +205,18 @@ prediction_cache = redis.Redis(host="localhost", port=configs["monitoring"]["por
 prod_metrics = get_metrics()
 prod_metrics["model_memory_usage"].set(process.memory_info().rss) # type: ignore
 
-# for label in topic_mapping.values():
-#     prod_metrics["topic_input_label"].labels(class_name=str(label)).inc(0) # type: ignore
+for label in topic_mapping.values():
+    prod_metrics["topic_input_label"].labels(class_name=str(label)).inc(0) # type: ignore
 
 for label in sent_mapping.values():
     prod_metrics["sent_input_label"].labels(class_name=str(label)).inc(0) # type: ignore
 
-# with open(parent / configs["topic"]["data"]["dist"], "r") as f:
-#     reader = csv.reader(f)
-#     for row in reader:
-#         if len(row) == 2:
-#             class_name, dist_val = row[0], float(row[1])
-#             prod_metrics["topic_baseline_data_dist"].labels(class_name=class_name).set(dist_val) # type: ignore
+with open(parent / configs["topic"]["data"]["dist"], "r") as f:
+    reader = csv.reader(f)
+    for row in reader:
+        if len(row) == 2:
+            class_name, dist_val = row[0], float(row[1])
+            prod_metrics["topic_baseline_data_dist"].labels(class_name=class_name).set(dist_val) # type: ignore
 
 with open(parent / configs["sentiment"]["data"]["dist"], "r") as f:
     reader = csv.reader(f)
@@ -226,9 +225,9 @@ with open(parent / configs["sentiment"]["data"]["dist"], "r") as f:
             class_name, dist_val = row[0], float(row[1])
             prod_metrics["sent_baseline_data_dist"].labels(class_name=class_name).set(dist_val) # type: ignore
 
-# topic_model_name = configs["topic"]["model"]["name"]
-# topic_model_path = configs["topic"]["model"]["path"]
-# topic_uri = init_topic_model()
+topic_model_name = configs["topic"]["model"]["name"]
+topic_model_path = configs["topic"]["model"]["path"]
+topic_uri = init_topic_model()
 
 sent_model_name = configs["sentiment"]["model"]["name"]
 sent_model_path = configs["sentiment"]["model"]["path"]
