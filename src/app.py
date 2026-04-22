@@ -131,21 +131,33 @@ def analyse(file, ext):
     if not txt.strip():  # text empty
         raise ValueError("Text empty")
     
-    sent_label, sent_conf = infer(txt, "sentiment", sent_model_name, sent_uri, sent_mapping)
+    # results = infer(txt, "sentiment", sent_model_name, sent_uri, sent_mapping)  # {'0': {'label': "", 'confidence': int}, ...}
+    # results = [
+    #     {"label": results[item]["label"].split('_')[1],
+    #         "confidence": results[item]["score"]}
+    #     for item in results
+    #     ]
+    # for item in results:  # TODO: Handle multiple inputs
+    #     sent_label = str(sent_mapping[str(item["label"])])
+    #     sent_conf = item["confidence"]
+    # prod_metrics["sent_input_label"].labels(class_name=sent_label).inc() # type: ignore
 
-    prod_metrics["sent_input_label"].labels(class_name=sent_label).inc() # type: ignore
-    topic_label, topic_conf = infer(txt, "topic", topic_model_name, topic_uri, topic_mapping)
+    results = infer(txt, "topic", topic_model_name, topic_uri, topic_mapping)  # {"label": "", "confidence": int}
+    topic_label = str(topic_mapping[str(results["label"]).split("_")[1]])
+    topic_conf = results["score"]
+    # topic_label, topic_conf = results.values()
     prod_metrics["topic_input_label"].labels(class_name=topic_label).inc() # type: ignore
 
     # cache save
     pred_id = str(uuid4())
-    prediction_cache.hset(name=pred_id, mapping={"sentiment": sent_label, "topic": topic_label})
+    # prediction_cache.hset(name=pred_id, mapping={"sentiment": sent_label, "topic": topic_label})
+    prediction_cache.hset(name=pred_id, mapping={"topic": topic_label})
 
-    label = prediction_cache.hget(pred_id, "sentiment")
-    print(label)
+    # label = prediction_cache.hget(pred_id, "sentiment")
+    # print(label)
 
     return {
-        "sentiment": {"label": sent_label, "confidence": sent_conf, "model": sent_model_name},
+        # "sentiment": {"label": sent_label, "confidence": sent_conf, "model": sent_model_name},
         "topic": {"label": topic_label, "confidence": topic_conf, "model": topic_model_name},
         "text": txt
     }
@@ -158,7 +170,7 @@ def infer(txt, mode, model_name, uri, mapping):
 
     try:
         with prod_metrics["inference_latency"].labels(mode=mode, model_type=model_name).time(): # type: ignore
-            payload = {"inputs": [txt]}
+            payload = {"inputs": [txt]}  # Need to ensure the size of the text is fixed
             headers = {"Content-Type": "application/json"}
 
             response = requests.post(uri, json=payload, headers=headers)
@@ -167,17 +179,8 @@ def infer(txt, mode, model_name, uri, mapping):
                 raise Exception(f"MLFlow API Error {response.status_code}: {response.text}")
 
             results = response.json().get("predictions", response.json())[0]
-            print(results)  # {'0': {'label': "", 'confidence': int}, ...}
-            results = [
-                {"label": results[item]["label"].split('_')[1],
-                 "confidence": results[item]["score"]}
-                for item in results
-                ]
-
-            for item in results:  # TODO: Handle multiple inputs
-                label = str(mapping[str(item["label"])])
-                confidence = item["confidence"]
-            print(label, confidence)
+            print(results)
+            return results
     except Exception as e:
         error_name = type(e).__name__
         logging.error(f"Error during {mode} inference: {error_name}")
@@ -193,8 +196,8 @@ def infer(txt, mode, model_name, uri, mapping):
 with open(parent / configs["topic"]["data"]["mapping"], "r") as f:
     topic_mapping = json.load(f)
 
-with open(parent / configs["sentiment"]["data"]["mapping"], "r") as f:
-    sent_mapping = json.load(f)
+# with open(parent / configs["sentiment"]["data"]["mapping"], "r") as f:
+#     sent_mapping = json.load(f)
 
 if os.environ.get("WERKZEUG_RUN_MAIN") == "true" or not app.debug:
     init_metrics_server(configs["monitoring"]["port"]["model"])
@@ -208,8 +211,8 @@ prod_metrics["model_memory_usage"].set(process.memory_info().rss) # type: ignore
 for label in topic_mapping.values():
     prod_metrics["topic_input_label"].labels(class_name=str(label)).inc(0) # type: ignore
 
-for label in sent_mapping.values():
-    prod_metrics["sent_input_label"].labels(class_name=str(label)).inc(0) # type: ignore
+# for label in sent_mapping.values():
+#     prod_metrics["sent_input_label"].labels(class_name=str(label)).inc(0) # type: ignore
 
 with open(parent / configs["topic"]["data"]["dist"], "r") as f:
     reader = csv.reader(f)
@@ -218,20 +221,20 @@ with open(parent / configs["topic"]["data"]["dist"], "r") as f:
             class_name, dist_val = row[0], float(row[1])
             prod_metrics["topic_baseline_data_dist"].labels(class_name=class_name).set(dist_val) # type: ignore
 
-with open(parent / configs["sentiment"]["data"]["dist"], "r") as f:
-    reader = csv.reader(f)
-    for row in reader:
-        if len(row) == 2:
-            class_name, dist_val = row[0], float(row[1])
-            prod_metrics["sent_baseline_data_dist"].labels(class_name=class_name).set(dist_val) # type: ignore
+# with open(parent / configs["sentiment"]["data"]["dist"], "r") as f:
+#     reader = csv.reader(f)
+#     for row in reader:
+#         if len(row) == 2:
+#             class_name, dist_val = row[0], float(row[1])
+#             prod_metrics["sent_baseline_data_dist"].labels(class_name=class_name).set(dist_val) # type: ignore
 
 topic_model_name = configs["topic"]["model"]["name"]
 topic_model_path = configs["topic"]["model"]["path"]
 topic_uri = init_topic_model()
 
-sent_model_name = configs["sentiment"]["model"]["name"]
-sent_model_path = configs["sentiment"]["model"]["path"]
-sent_uri = init_sentiment_model()
+# sent_model_name = configs["sentiment"]["model"]["name"]
+# sent_model_path = configs["sentiment"]["model"]["path"]
+# sent_uri = init_sentiment_model()
 
 port = configs["deployment"]["port"]
 
@@ -276,8 +279,8 @@ def root():
             return jsonify({"message": "No selected file"}), 400
     else:
         return render_template("index.html",
-                               sent_model=sent_model_name,
-                               topic_model="topic_model_name")
+                               sent_model="sent_model_name",
+                               topic_model=topic_model_name)
 
 @app.route("/health", methods=["GET", "POST"])
 def health():
@@ -320,4 +323,4 @@ def ingest():
 
 if __name__ == "__main__":
     print(f"Run app on port = {port}")
-    app.run(debug=True, port=port, use_reloader=False)
+    app.run(debug=False, port=port, use_reloader=False)

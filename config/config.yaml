@@ -76,7 +76,7 @@ deployment:
 monitoring:
   url: "localhost"
   port:
-    model: 8001 # model logging
+    model: 8000 # model logging
     streamlit: 8501 # streamlit
     node: 9100  # node manager
     alert: 5002 # alert mail server
