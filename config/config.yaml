@@ -40,13 +40,13 @@ sentiment:
     no_classes: 3
     embed_len: 128
   model:
-    name: "huawei-noah/TinyBERT_General_4L_312D"
-    path: "models/sentiment/v3"
-    output: "output/v3"
-    version: "v3"
+    name: "distilbert/distilbert-base-uncased"
+    path: "models/sentiment/v4"
+    output: "output/v4"
+    version: "v4"
     device: "cuda"
     hyperparams:
-      lr: 4e-5
+      lr: 2e-5
       train_batch_size: 32
       eval_batch_size: 16
       epochs: 15
