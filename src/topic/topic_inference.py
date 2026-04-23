@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from pathlib import Path
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
-parent = Path(__file__).resolve().parent.parent
+parent = Path(__file__).resolve().parent.parent.parent
 
 class TopicModel:
     def __init__(self, model_path: str, device: str = "cpu"):
@@ -28,6 +28,7 @@ class TopicModel:
             texts, 
             padding=True, 
             truncation=True, 
+            max_length=512,
             return_tensors="pt"
         ).to(self.device)
         

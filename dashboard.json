@@ -1,4 +1,10 @@
 {
+  "title": "Financial News Analysis v3",
+  "description": "Dashboard for Financial News Analysis AI application metrics and Hardware metrics",
+  "tags": ["finance", "ai", "image"],
+  "timezone": "browser",
+  "refresh": "5s",
+  "schemaVersion": 38,
   "annotations": {
     "list": [
       {
@@ -15,7 +21,6 @@
       }
     ]
   },
-  "description": "Dashboard for Financial News Analysis AI application metrics and Hardware metrics",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
@@ -1630,13 +1635,6 @@
     }
   ],
   "preload": false,
-  "refresh": "5s",
-  "schemaVersion": 42,
-  "tags": [
-    "finance",
-    "ai",
-    "image"
-  ],
   "templating": {
     "list": []
   },
@@ -1645,8 +1643,6 @@
     "to": "now"
   },
   "timepicker": {},
-  "timezone": "browser",
-  "title": "Financial News Analysis v3",
   "uid": "adq2pms",
   "version": 2,
   "weekStart": ""

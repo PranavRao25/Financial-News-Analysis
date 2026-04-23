@@ -1,0 +1,76 @@
+schema: '2.0'
+stages:
+  data_prep:
+    cmd: python src/topic/topic_data_prep.py
+    deps:
+    - path: data/topic/raw/test.csv
+      hash: md5
+      md5: 5057803792b6f09a737ccfa8fbda83ed
+      size: 580140
+    - path: data/topic/raw/train.csv
+      hash: md5
+      md5: b760bc893c6b0e9e46d90b81bfc82dc0
+      size: 2385009
+    - path: src/topic/topic_data_prep.py
+      hash: md5
+      md5: c18f4ae0a7245fa63791168f0ef56b15
+      size: 1622
+    params:
+      config.yaml:
+        topic.data.processed: data/topic/processed
+        topic.data.random_state: 42
+        topic.data.raw: data/topic/raw
+        topic.data.train_valid_split: 0.25
+    outs:
+    - path: data/topic/processed/test.csv
+      hash: md5
+      md5: 5057803792b6f09a737ccfa8fbda83ed
+      size: 580140
+    - path: data/topic/processed/train.csv
+      hash: md5
+      md5: 5ce589fb818fb9dd1ecc047b6881c139
+      size: 1791834
+    - path: data/topic/processed/valid.csv
+      hash: md5
+      md5: 269a902400a89566d54de4cfc870c92f
+      size: 593186
+  data_tokenize:
+    cmd: python src/topic/topic_data_tokenize.py
+    deps:
+    - path: data/topic/processed/test.csv
+      hash: md5
+      md5: 5057803792b6f09a737ccfa8fbda83ed
+      size: 580140
+    - path: data/topic/processed/train.csv
+      hash: md5
+      md5: 5ce589fb818fb9dd1ecc047b6881c139
+      size: 1791834
+    - path: data/topic/processed/valid.csv
+      hash: md5
+      md5: 269a902400a89566d54de4cfc870c92f
+      size: 593186
+    - path: src/topic/topic_data_tokenize.py
+      hash: md5
+      md5: c377fdad60d6763ebfc0c845aae3c92a
+      size: 1615
+    params:
+      config.yaml:
+        topic.data.embed_len: 128
+        topic.data.processed: data/topic/processed
+        topic.model.name: huawei-noah/TinyBERT_General_4L_312D
+    outs:
+    - path: data/topic/processed/test
+      hash: md5
+      md5: b69a0ef9c57976567d134d735a8a9532.dir
+      size: 1751907
+      nfiles: 3
+    - path: data/topic/processed/train
+      hash: md5
+      md5: bb9888524117903385cdd39ea14f618a.dir
+      size: 5409265
+      nfiles: 3
+    - path: data/topic/processed/valid
+      hash: md5
+      md5: e55efe2404d146a90ab849b8d67bcfb7.dir
+      size: 1792884
+      nfiles: 3

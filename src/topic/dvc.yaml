@@ -3,7 +3,7 @@ stages:
     wdir: ../../
     cmd: python data_prep.py
     deps:
-      - data_prep.py
+      - src/topic/topic_data_prep.py
       - data/topic/raw/train.csv
       - data/topic/raw/test.csv
     params:
@@ -21,7 +21,7 @@ stages:
     wdir: ../../
     cmd: python data_tokenize.py
     deps:
-      - data_tokenize.py
+      - src/topic/topic_data_tokenize.py
       - data/topic/processed/train.csv
       - data/topic/processed/valid.csv
       - data/topic/processed/test.csv
