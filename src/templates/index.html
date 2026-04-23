@@ -1,73 +1,3 @@
-<!-- <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Financial News Analysis</title>
-    <style>
-        body { font-family: system-ui, sans-serif; max-width: 800px; margin: 2rem auto; padding: 0 1rem; }
-        .result-block { margin-top: 2rem; padding: 1rem; border: 1px solid #ccc; border-radius: 4px; background: #f9f9f9; }
-        pre { white-space: pre-wrap; word-wrap: break-word; background: #eee; padding: 1rem; }
-        #loading { display: none; color: #0066cc; font-weight: bold; margin-top: 1rem; }
-    </style>
-</head>
-<body>
-    <h2>Document Inference Setup</h2>
-
-    <p>Sentiment Analysis model - {{sent_model}}</p>
-    <p>Topic Modelling model - {{topic_model}}</p>
-    
-    <form id="uploadForm">
-        <input type="file" id="fileInput" name="file" required accept=".txt,.pdf,.png,.jpg,.jpeg">
-        <button type="submit">Run Inference</button>
-    </form>
-    
-    <div id="loading">Running inference pipeline...</div>
-    <div id="resultBox"></div>
-
-    <script>
-        document.getElementById('uploadForm').onsubmit = async (e) => {
-            e.preventDefault(); // Stop the browser from reloading the page
-            
-            const fileInput = document.getElementById('fileInput');
-            const formData = new FormData();
-            formData.append('file', fileInput.files[0]);
-
-            // Toggle UI states
-            document.getElementById('loading').style.display = 'block';
-            document.getElementById('resultBox').innerHTML = '';
-
-            try {
-                const response = await fetch('/', { 
-                    method: 'POST', 
-                    body: formData 
-                });
-                
-                const data = await response.json();
-                document.getElementById('loading').style.display = 'none';
-
-                if (response.ok) {
-                    // Dynamically inject the JSON response into the DOM
-                    document.getElementById('resultBox').innerHTML = `
-                        <div class="result-block">
-                            <h3>Inference Results</h3>
-                            <p><strong>Sentiment:</strong> ${data.sentiment.label} (Conf: ${data.sentiment.confidence.toFixed(4)})</p>
-                            <p><strong>Topic:</strong> ${data.topic.label} (Conf: ${data.topic.confidence.toFixed(4)})</p>
-                            <h4>Extracted Text Context:</h4>
-                            <pre>${data.text}</pre>
-                        </div>
-                    `;
-                } else {
-                    document.getElementById('resultBox').innerHTML = `<p style="color:red;">Server Error: ${data.message}</p>`;
-                }
-            } catch (err) {
-                document.getElementById('loading').style.display = 'none';
-                document.getElementById('resultBox').innerHTML = `<p style="color:red;">Network or CORS Error occurred.</p>`;
-            }
-        };
-    </script>
-</body>
-</html> -->
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -75,37 +5,233 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Financial News Analysis Dashboard</title>
     <style>
-        body { font-family: system-ui, -apple-system, sans-serif; background-color: #f4f4f9; color: #333; padding: 20px; }
-        .container { max-width: 800px; margin: 0 auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        .upload-section { margin-bottom: 20px; padding: 15px; background: #eef2f5; border-radius: 6px; display: flex; gap: 10px; align-items: center; }
-        .upload-section input[type="file"] { flex-grow: 1; }
-        .upload-section button { background: #0056b3; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold; }
-        .upload-section button:hover { background: #004494; }
-        .text-box { background: #f8f9fa; padding: 15px 20px; border-left: 4px solid #0056b3; margin-bottom: 25px; font-size: 1.1em; line-height: 1.5; color: #444; min-height: 50px;}
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        .card { border: 1px solid #eaeaea; padding: 20px; border-radius: 6px; }
-        .card h3 { margin-top: 0; border-bottom: 2px solid #f4f4f9; padding-bottom: 10px; }
-        .metric { display: flex; justify-content: space-between; margin-bottom: 12px; }
-        .label { font-weight: 600; color: #666; }
-        .value { font-family: monospace; background: #f4f4f9; padding: 2px 6px; border-radius: 4px; }
-        .error { color: #d9534f; font-weight: bold; margin-top: 10px; display: none; }
+        :root {
+            --bg-main: #e0f2fe;        /* Very light cool blue */
+            --bg-color: #7cd2fe;
+            --bg-card: #ffffff;        /* Pure white cards */
+            
+            --bg-header-doc: #9ADBFD;      /* Example: Soft green */
+            --text-header-doc: #0f172a;    /* Example: Dark green text */
+
+            --bg-header-history: #B3E4FD;  /* Example: Soft purple */
+            --text-header-history: #0f172a;/* Example: Dark purple text */
+
+            --text-primary: #0f172a;   /* Near-black for high contrast */
+            --text-secondary: #475569; /* Slate gray for secondary text */
+            
+            --accent: #0284c7;         /* Strong ocean blue */
+            --accent-hover: #0369a1;   /* Deeper blue on hover */
+
+            --border: #bae6fd;         /* Light blue structural borders */
+            --error: #dc2626;          /* Deep red for errors */
+        }
+
+        body { 
+            font-family: system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-primary);
+            padding: 20px; margin: 0;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        /* Header & Upload Section */
+        .header-section {
+            background: var(--bg-card);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .upload-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            align-items: flex-start;
+            margin-top: 15px;
+        }
+        .upload-wrapper input[type="file"] {
+            border: 1px solid var(--border);
+            padding: 8px;
+            border-radius: 4px;
+            width: 100%;
+            max-width: 400px;
+        }
+        .upload-wrapper button {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+        .upload-wrapper button:hover {
+            background: var(--accent-hover);
+        }
+        
+        /* Status & Spinner */
+        .status-area {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .spinner {
+            border: 3px solid rgba(0,0,0,0.1);
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border-left-color: var(--accent);
+            animation: spin 1s linear infinite;
+            display: none;
+        }
+        .spinner.active {
+            display: block;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .error {
+            color: var(--error);
+            font-weight: 500;
+            display: none;
+        }
+
+        /* Main 3-Column Grid */
+        .analysis-grid {
+            display: grid;
+            grid-template-columns: 280px minmax(0, 1fr) 280px;
+            gap: 20px;
+            align-items: start;
+        }
+        
+        /* Cards & Metrics */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .card h3 {
+            margin-top: 0;
+            color: var(--text-primary);
+            border-bottom: 2px solid var(--bg-color);
+            padding-bottom: 10px;
+            font-size: 1.1em;
+        }
+        .metric {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 15px;
+        }
+        .label {
+            font-weight: 600;
+            color: var(--text-secondary);
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+        .value {
+            font-family: ui-monospace, monospace;
+            background: var(--bg-color);
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 0.95em;
+            word-break: break-all;
+        }
+
+        /* Center Content (Text & Image) */
+        .content-display {
+            background: var(--bg-card);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .content-header { 
+            background: var(--bg-header-doc);
+            color: var(--text-header-doc);
+            padding: 10px 20px; 
+            font-weight: bold; 
+            border-bottom: 1px solid var(--border); 
+        }
+        .scrollable-content {
+            max-height: 60vh;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        
+        /* Formatting enforcement */
+        .text-box {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-size: 1.05em;
+            line-height: 1.6;
+            color: #333;
+        }
+        .image-preview {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            display: none;
+            border: 1px solid var(--border);
+        }
+
+        /* History Section */
+        .history-section {
+            background: var(--bg-card);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            margin-top: 10px;
+        }
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+        .history-table th, .history-table td {
+            padding: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+        .history-table th { 
+            background: var(--bg-header-history);
+            color: var(--text-header-history);
+            font-weight: 600; 
+            padding: 12px; 
+            border-bottom: 1px solid var(--border); 
+        }
+        .history-table tr:hover {
+            background: #f8fafc;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>Financial News Analysis</h2>
-
-        <div class="upload-section">
-            <input type="file" id="fileInput" accept=".txt,.pdf,.png,.jpg,.jpeg">
-            <button onclick="uploadAndAnalyze()">Analyze File</button>
+        <div class="header-section">
+            <h2>Financial News Analysis</h2>
+            <div class="upload-wrapper">
+                <input type="file" id="fileInput" accept=".txt,.pdf,.png,.jpg,.jpeg">
+                <div class="status-area">
+                    <button onclick="uploadAndAnalyze()" id="analyzeBtn">Analyze File</button>
+                    <div id="spinner" class="spinner"></div>
+                    <span id="statusText"></span>
+                </div>
+            </div>
+            <div id="errorMessage" class="error"></div>
         </div>
-        <div id="errorMessage" class="error"></div>
 
-        <div class="text-box" id="inputText">
-            Waiting for document upload...
-        </div>
-
-        <div class="grid">
+        <div class="analysis-grid">
             <div class="card">
                 <h3>Sentiment Analysis</h3>
                 <div class="metric">
@@ -118,7 +244,16 @@
                 </div>
                 <div class="metric">
                     <span class="label">Model Engine</span> 
-                    <span class="value" id="sentModel">{{ sent_model }}</span> </div>
+                    <span class="value" id="sentModel">{{ sent_model }}</span> 
+                </div>
+            </div>
+
+            <div class="content-display">
+                <div class="content-header" id="docTitle">Document Content</div>
+                <div class="scrollable-content">
+                    <img id="imagePreview" class="image-preview" alt="Document Preview">
+                    <div class="text-box" id="inputText">Waiting for document upload...</div>
+                </div>
             </div>
 
             <div class="card">
@@ -133,32 +268,82 @@
                 </div>
                 <div class="metric">
                     <span class="label">Model Engine</span> 
-                    <span class="value" id="topicModel">{{ topic_model }}</span> </div>
+                    <span class="value" id="topicModel">{{ topic_model }}</span> 
+                </div>
             </div>
+        </div>
+
+        <div class="history-section">
+            <h3>Analysis History</h3>
+            <table class="history-table">
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>Filename</th>
+                        <th>Sentiment</th>
+                        <th>Topic</th>
+                        <th>Prediction ID</th>
+                    </tr>
+                </thead>
+                <tbody id="historyBody"></tbody>
+            </table>
         </div>
     </div>
 
     <script>
+        const analysisHistory = [];
+
         async function uploadAndAnalyze() {
             const fileInput = document.getElementById('fileInput');
             const errorMessage = document.getElementById('errorMessage');
+            const spinner = document.getElementById('spinner');
+            const analyzeBtn = document.getElementById('analyzeBtn');
+            const statusText = document.getElementById('statusText');
+            const imagePreview = document.getElementById('imagePreview');
+            const inputText = document.getElementById('inputText'); // Added reference
             
-            // Clear previous errors
+            // Reset UI states
             errorMessage.style.display = 'none';
             errorMessage.innerText = '';
+            imagePreview.style.display = 'none';
+            imagePreview.src = '';
 
             if (fileInput.files.length === 0) {
                 showError("Please select a file first.");
                 return;
             }
 
+            const file = fileInput.files[0];
             const formData = new FormData();
-            formData.append("file", fileInput.files[0]);
+            formData.append("file", file);
 
-            document.getElementById('inputText').innerText = "Processing...";
+            // Determine if the file is an image
+            const isImage = file.type.startsWith('image/');
+
+            // Await execution block updates
+            analyzeBtn.disabled = true;
+            spinner.classList.add('active');
+            statusText.innerText = "Running inference pipelines...";
+            // document.getElementById('docTitle').innerText = "Document Content";
+
+            // Handle UI layout prior to inference
+            if (isImage) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    imagePreview.src = e.target.result;
+                    imagePreview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+                
+                // Hide the text box entirely
+                inputText.style.display = 'none'; 
+            } else {
+                // Ensure text box is visible for text/pdf and set processing state
+                inputText.style.display = 'block';
+                inputText.innerText = "Processing...";
+            }
 
             try {
-                // Send the POST request to your Flask root function
                 const response = await fetch('/', {
                     method: 'POST',
                     body: formData
@@ -170,32 +355,79 @@
                     throw new Error(data.message || "An error occurred during inference.");
                 }
 
-                // Populate the UI with the returned dictionary
-                populateDashboard(data);
+                // Pass the isImage flag to the populate function
+                populateDashboard(data, isImage);
+                recordHistory(file.name, data);
 
             } catch (error) {
                 showError(error.message);
-                document.getElementById('inputText').innerText = "Inference failed.";
+                // Reveal the text box to show the error message
+                inputText.style.display = 'block'; 
+                inputText.innerText = "Inference failed.";
+            } finally {
+                // Restore interactive state regardless of success/failure
+                analyzeBtn.disabled = false;
+                spinner.classList.remove('active');
+                statusText.innerText = "";
+            }
+        }
+    
+        function populateDashboard(data, isImage) {
+            const inputText = document.getElementById('inputText');
+
+            // Only populate and show text if it is NOT an image
+            if (!isImage) {
+                inputText.innerText = data.text;
+                inputText.style.display = 'block';
+            } else {
+                inputText.style.display = 'none';
+            }
+
+            if (data.sentiment) {
+                document.getElementById('sentLabel').innerText = data.sentiment.label;
+                document.getElementById('sentConf').innerText = data.sentiment.status === 'success' 
+                    ? (data.sentiment.confidence * 100).toFixed(2) + '%' 
+                    : 'ERROR';
+            }
+
+            if (data.topic) {
+                document.getElementById('topicLabel').innerText = data.topic.label;
+                document.getElementById('topicConf').innerText = data.topic.status === 'success' 
+                    ? (data.topic.confidence * 100).toFixed(2) + '%' 
+                    : 'ERROR';
             }
         }
 
-        function populateDashboard(data) {
-            document.getElementById('inputText').innerText = `"${data.text}"`;
+        function recordHistory(filename, data) {
+            const timestamp = new Date().toLocaleTimeString();
+            
+            const record = {
+                time: timestamp,
+                file: filename,
+                sentiment: data.sentiment ? data.sentiment.label : 'N/A',
+                topic: data.topic ? data.topic.label : 'N/A',
+                pred_id: data.pred_id || 'N/A'
+            };
 
-            // Populate Sentiment Card
-            if (data.sentiment) {
-                document.getElementById('sentLabel').innerText = data.sentiment.label;
-                document.getElementById('sentConf').innerText = (data.sentiment.confidence * 100).toFixed(1) + '%';
-            }
+            analysisHistory.unshift(record);
+            renderHistoryTable();
+        }
 
-            // Populate Topic Card (Gracefully handles if topic is commented out in backend)
-            if (data.topic) {
-                document.getElementById('topicLabel').innerText = data.topic.label;
-                document.getElementById('topicConf').innerText = (data.topic.confidence * 100).toFixed(1) + '%';
-            } else {
-                document.getElementById('topicLabel').innerText = 'Disabled';
-                document.getElementById('topicConf').innerText = '-';
-            }
+        function renderHistoryTable() {
+            const tbody = document.getElementById('historyBody');
+            tbody.innerHTML = '';
+
+            analysisHistory.forEach(record => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${record.time}</td>
+                    <td>${record.file}</td>
+                    <td><span class="value">${record.sentiment}</span></td>
+                    <td><span class="value">${record.topic}</span></td>
+                    <td><span style="font-family: monospace; font-size: 0.8em; color: #64748b;">${record.pred_id}</span></td>
+                `;
+                tbody.appendChild(tr);
+            });
         }
 
         function showError(msg) {

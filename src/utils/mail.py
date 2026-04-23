@@ -7,6 +7,7 @@ import smtplib
 from email.message import EmailMessage
 import os
 from dotenv import load_dotenv
+from werkzeug.exceptions import BadRequest
 
 app = Flask(__name__)
 parent = Path(__file__).resolve().parent.parent.parent
@@ -43,6 +44,7 @@ def send_mail(subject, body):
         return True
     except smtplib.SMTPAuthenticationError:
         logging.error("SMTP Authentication failed. Verify your App Password and Email.")
+        return False
     except Exception as e:
         logging.error(f"Failed to send email with exception: {e}")
         print(f"Failed with exception : {e}")
@@ -52,7 +54,9 @@ def send_mail(subject, body):
 def webhook():
     if request.method == "POST":
         try:
-            payload = request.json
+            payload = request.get_json()
+        except BadRequest:
+            return "Invalid json", 400
         except json.JSONDecodeError:
             return "Invalid json", 400
 

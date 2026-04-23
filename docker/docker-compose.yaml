@@ -120,6 +120,10 @@ services:
       - /config.yaml:/app/config.yaml
     environment:
       - PYTHONUNBUFFERED=1
+      - REDIS_HOST=redis
+    depends_on:
+      redis:
+        condition: service_healthy
     deploy:
       resources:
         reservations:

@@ -70,6 +70,7 @@ deployment:
   topic_serve: 5003  # MLFlow serve for Topic Modelling
   mlflow: 5000
   airflow: 8080
+  text_len_limit: 1800
   logs:
   version: "v2"
 

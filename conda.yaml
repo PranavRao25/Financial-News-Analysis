@@ -16,6 +16,7 @@ dependencies:
   - pip
   - pip:
     - mlflow==3.10.1
+    - redis
     - Flask
     - python-dotenv
     - psutil
