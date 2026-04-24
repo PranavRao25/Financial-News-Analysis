@@ -13,6 +13,8 @@ nflog
 silences
 queries.active
 wal/
+logs/
+plugins/
 prometheus-3.10.0.linux-amd64/promtool
 prometheus-3.10.0.linux-amd64/prometheus
 node_exporter-1.10.2.linux-amd64/node_exporter

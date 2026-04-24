@@ -138,7 +138,7 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: financial_alert_api
-    command: python3 run src/mail.py
+    command: python3 run src/utils/mail.py
     ports:
       - 5002:5002
     volumes:
@@ -165,6 +165,21 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=admin
     depends_on:
       - prometheus
+  node_exporter:
+    image: prom/node-exporter:latest
+    container_name: node_exporter
+    command:
+      - "--path.procfs=/host/proc"
+      - '--path.rootfs=/rootfs'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    ports:
+      - 9100:9100
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    restart: unless-stopped
   mlflow_ui:
     command: mlflow server --backend-store-uri sqlite:///./mlflow.db --default-artifact-root ./models --host 0.0.0.0 --port 5000
     volumes:
@@ -172,10 +187,32 @@ services:
       - ./data:/app/data
       - /config.yaml:/app/config.yaml
       - /mlflow.db:/app/mlflow.db
-  mlflow_serve:
-    command: mlflow models serve -m "runs:/<run_name>/model" -p 5001 --env-manager local
+  topic_serve:
+    command: mlflow models serve -m "runs:/f7c0ab5f75a84583a757f116fb990ba6/model" -p 5003 --env-manager local
+    ports:
+      - 5003:5003
     volumes:
       - ./mlruns:/app/mlruns
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1 # Or specify UUID if sharing a single GPU
+              capabilities: [gpu]
+  sent_serve:
+    command: mlflow models serve -m "runs:/6eaf1529f6294dfdacc7fedcc164c6f2/model" -p 5001 --env-manager local
+    ports:
+      - 5001:5001
+    volumes:
+      - ./mlruns:/app/mlruns
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1 # Or specify UUID if sharing a single GPU
+              capabilities: [gpu]
   postgres:
     image: postgres:16
     environment:

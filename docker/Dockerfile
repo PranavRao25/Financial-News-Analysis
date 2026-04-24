@@ -8,6 +8,8 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
+RUN adduser --disabled-password --gecos '' appuser
+
 COPY requirements.txt .
 
 RUN apt-get update && apt-get install -y \
@@ -20,9 +22,13 @@ RUN apt-get update && apt-get install -y \
     python -m pip install -r requirements.txt
 
 COPY src ./src/
+COPY run.sh .
+RUN chmod +x run.sh && chown -R appuser:appuser /app
 
-EXPOSE 6969 8000 5001 9090 3000
+EXPOSE 8501 5000 5001 5002 5003 8080 8000 9090 9093 9100 3000 6379
 
-RUN run.sh
+USER appuser
 
-HEALTHCHECK CMD curl --fail http://localhost:6969 || exit 1
+HEALTHCHECK CMD curl --fail http://localhost:8501 || exit 1
+
+CMD ["./run.sh"]
