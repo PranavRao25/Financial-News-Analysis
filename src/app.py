@@ -21,8 +21,6 @@ import logging
 import redis
 import utils.mail as mail
 
-## TODO: FIX TOPIC LENGTH ISSUE
-
 print("Financial News Analysis app started")
 
 app = Flask(__name__)
@@ -131,14 +129,8 @@ def analyse(file, ext):
     def run_sentiment():  # thread running Sentiment inference
         try:
             results = infer(txt, "sentiment", sent_model_name, sent_uri, sent_mapping)  # {'0': {'label': "", 'confidence': int}, ...}
-            results = [
-                {"label": results[item]["label"].split('_')[1],
-                 "confidence": results[item]["score"]}
-                for item in results
-            ]
-            for item in results:  # TODO: Handle multiple inputs
-                label = str(sent_mapping[str(item["label"])])
-                conf = item["confidence"]
+            label = str(sent_mapping[str(results["label"]).split("_")[1]])
+            conf = results["score"]
             prod_metrics["sent_input_label"].labels(class_name=label).inc() # type: ignore
             return {"label": label, "confidence": conf, "model": sent_model_name, "status": "success", "error": ""}
         except Exception as e:
@@ -211,7 +203,8 @@ def infer(txt, mode, model_name, uri, mapping):
                 "inputs": [txt],
                 "params": {
                     "truncation": True,
-                    "max_length": 512
+                    "max_length": 512,
+                    "return_token_type_ids": False
                 }
             }
             headers = {"Content-Type": "application/json"}

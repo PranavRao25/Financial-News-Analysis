@@ -19,4 +19,4 @@ entry_points:
       lr: {type: float, default: 0.0001}
       epochs: {type: int, default: 15}
       wgt_decay: {type: float, default: 0.01}
-    command: "python3 src/topic/topic_train.py --lr {lr} --epochs {epochs} --wgt_decay {wgt_decay}"
+    command: "python3 src/sentiment/sent_train.py --lr {lr} --epochs {epochs} --wgt_decay {wgt_decay}"

@@ -174,9 +174,6 @@ def train(train_dataset_path, valid_dataset_path, model_path,
 
         trainer.train()
 
-        # model.qconfig = quant.get_default_qat_qconfig('fbgemm')
-        # quant.prepare_qat(model, inplace=True)
-
         results = trainer.evaluate()
         cm = np.array(results.pop("eval_cm"))
 

@@ -56,7 +56,8 @@ with DAG(
     default_args=default_args,
     description="Automated News Analysis Pipeline",
     schedule=None,
-    start_date=datetime(2026, 4, 19),
+    schedule_interval=None,
+    start_date=datetime(2026, 4, 24),
     tags=["retrain"],
     catchup=False) as dag:
 
@@ -71,7 +72,7 @@ with DAG(
         alerts = payload.get("alerts")
         for alert in alerts:
             if alert["status"] == "firing":
-                return {"model": model_name, "drift": alert.get("annotations", {}).get("description")}                
+                return {"model": model_name, "drift": alert.get("annotations", {}).get("description")}
     
     # @task(pool="scraper_pool", retries=3, retry_exponential_backoff=True)
     
@@ -94,7 +95,6 @@ with DAG(
         task_id="fetch_data",
         python_callable=fetch_new_ground_truth
     )
-
 
     train = PythonOperator(
         task_id="train_model",
