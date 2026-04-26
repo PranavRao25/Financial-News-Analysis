@@ -1,8 +1,7 @@
 datasets
-transformers
 torch
-transformers
-torch
+torchvision
+transformers<5.0.0
 prometheus_client
 Pillow
 flask
@@ -10,3 +9,16 @@ honcho
 werkzeug
 wandb
 redis
+dotenv
+opencv-python
+pytesseract
+mlflow==3.10.1
+starlette<1.0.0
+gunicorn
+scikit-learn
+pandas
+pyyaml
+tqdm
+psutil
+accelerate
+evaluate

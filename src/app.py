@@ -40,10 +40,10 @@ def failure_mail(model_id, e):
     """
     mail.send_mail(subject, body)
 
-def init_metrics_server(port=8000):
-    print(f"Metrics server on port = {port}")
-    start_http_server(port)
-    return True
+# def init_metrics_server(port=8000):
+#     print(f"Metrics server on port = {port}")
+#     start_http_server(port)
+#     return True
 
 def get_metrics():
     return {
@@ -116,12 +116,14 @@ def get_metrics():
 def init_topic_model():
     print("Init topic model")
     serve_port = configs["deployment"]["topic_serve"]
+    # MLFLOW_URI = f"http://topic_mlflow_serve:{serve_port}/invocations"
     MLFLOW_URI = f"http://127.0.0.1:{serve_port}/invocations"
     return MLFLOW_URI
 
 def init_sentiment_model():
     print("Init Sentiment model")
     serve_port = configs["deployment"]["sent_serve"]
+    MLFLOW_URI = f"http://sentiment_mlflow_serve:{serve_port}/invocations"
     MLFLOW_URI = f"http://127.0.0.1:{serve_port}/invocations"
     return MLFLOW_URI
 
@@ -238,9 +240,8 @@ with open(parent / configs["topic"]["data"]["mapping"], "r") as f:
 with open(parent / configs["sentiment"]["data"]["mapping"], "r") as f:
     sent_mapping = json.load(f)
 
-if os.environ.get("WERKZEUG_RUN_MAIN") == "true" or not app.debug:
-    init_metrics_server(configs["monitoring"]["port"]["model"])
-    process = psutil.Process(os.getpid())
+# if os.environ.get("WERKZEUG_RUN_MAIN") == "true" or not app.debug
+process = psutil.Process(os.getpid())
 
 redis_host = os.environ.get("REDIS_HOST", "localhost")
 prediction_cache = redis.Redis(host=redis_host, port=configs["monitoring"]["port"]["redis"], db=0, decode_responses=True)

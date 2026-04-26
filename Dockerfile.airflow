@@ -1,0 +1,13 @@
+# Use the exact version from your docker-compose.yaml
+FROM apache/airflow:3.1.8
+
+# Ensure we are operating as the internal airflow user (UID 50000)
+USER airflow
+
+# Bake the dependencies permanently into the image layer
+RUN pip install --no-cache-dir \
+    datasets \
+    pandas \
+    beautifulsoup4 \
+    mlflow \
+    psycopg2-binary

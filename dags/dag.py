@@ -62,7 +62,6 @@ with DAG(
     default_args=default_args,
     description="Automated News Analysis Pipeline",
     schedule=None,
-    schedule_interval=None,
     start_date=datetime(2026, 4, 24),
     tags=["retrain"],
     catchup=False) as dag:
@@ -249,8 +248,7 @@ with DAG(
     
     parse_alerts = PythonOperator(
         task_id="parse_alert_context",
-        python_callable=extract_alert_context,
-        provide_context=True
+        python_callable=extract_alert_context
     )
     
     fetch_data = PythonOperator(
