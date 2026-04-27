@@ -1,0 +1,82 @@
+groups:
+  - name: sent_psi_rules
+    interval: 1m
+    rules:
+      - record: sent_model:live_dist:class_name
+        expr: |
+          (sum by (class_name) (rate(sent_model_input_classes_total[5m]))) / on() group_left() sum(rate(sent_model_input_classes_total[5m]))
+      - record: sent_model:psi_per_class:class_name
+        expr: |
+          (
+            (
+              sum by (class_name) (rate(sent_model_input_classes_total[5m]))
+              /
+              on() group_left()
+              sum(rate(sent_model_input_classes_total[5m]))
+            ) + 1e-5
+            -
+            (sum by (class_name) (sent_model_baseline_data_dist) + 1e-5)
+          )
+          *
+          ln(
+            (
+              (
+                sum by (class_name) (rate(sent_model_input_classes_total[5m]))
+                /
+                on() group_left()
+                sum(rate(sent_model_input_classes_total[5m]))
+              ) + 1e-5
+            )
+            /
+            on(class_name) group_left()
+            (sum by (class_name) (sent_model_baseline_data_dist) + 1e-5)
+          )
+  - name: topic_psi_rules
+    interval: 1m
+    rules:
+      - record: topic_model:live_dist:class_name
+        expr: |
+          (sum by (class_name) (rate(topic_model_input_classes_total[5m]))) / on() group_left() sum(rate(topic_model_input_classes_total[5m]))
+      - record: topic_model:psi_per_class:class_name
+        expr: |
+          (
+            (
+              sum by (class_name) (rate(topic_model_input_classes_total[5m]))
+              /
+              on() group_left()
+              sum(rate(topic_model_input_classes_total[5m]))
+            ) + 1e-5
+            -
+            (sum by (class_name) (topic_model_baseline_data_dist) + 1e-5)
+          )
+          *
+          ln(
+            (
+              (
+                sum by (class_name) (rate(topic_model_input_classes_total[5m]))
+                /
+                on() group_left()
+                sum(rate(topic_model_input_classes_total[5m]))
+              ) + 1e-5
+            )
+            /
+            on(class_name) group_left()
+            (sum by (class_name) (topic_model_baseline_data_dist) + 1e-5)
+          )
+  - name: sent_drift
+    interval: 1m
+    rules:
+      - record: sent_model:class_dist:rate5m
+        expr: >
+          sum by (class_name) (rate(sent_model_input_classes_total[5m]))
+          / on() group_left()
+          sum(rate(sent_model_input_classes_total[5m]))
+  - name: topic_drift
+    interval: 1m
+    rules:
+      - record: topic_model:class_dist:rate5m
+        expr: >
+          sum by (class_name) (rate(topic_model_input_classes_total[5m]))
+          / on() group_left()
+          sum(rate(topic_model_input_classes_total[5m]))
+    

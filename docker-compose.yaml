@@ -157,6 +157,8 @@ services:
     - 9090:9090
     volumes:
       - ./config/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./config/alerts.yaml:/etc/prometheus/alerts.yaml
+      - ./config/rules.yaml:/etc/prometheus/rules.yaml
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
     depends_on:
@@ -169,8 +171,11 @@ services:
     restart: unless-stopped
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=admin
-      - GF_AUTH_DISABLE_LOGIN_FORM=false
       - GF_SECURITY_DISABLE_INITIAL_ADMIN_CREATION=false
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_AUTH_DISABLE_LOGIN_FORM=true
+      - GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/etc/grafana/dashboards/dashboard.json
     depends_on:
       - prometheus
     volumes:
@@ -491,9 +496,6 @@ services:
       - airflow
     depends_on:
       <<: *airflow-common-depends-on
-  # You can enable flower by adding "--profile flower" option e.g. docker-compose --profile flower up
-  # or by explicitly targeted on the command line e.g. docker-compose up flower.
-  # See: https://docs.docker.com/compose/profiles/
   flower:
     <<: *airflow-common
     command: celery flower
@@ -512,7 +514,21 @@ services:
       <<: *airflow-common-depends-on
       airflow-init:
         condition: service_completed_successfully
-
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: alertmanager
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./config/alertmanager.yml:/etc/alertmanager/alertmanager.yml
+    restart: always
 volumes:
   postgres-db-volume:
   grafana-storage:
+
+# Add this at the bottom of the file
+networks:
+  default:
+    driver: bridge
+    driver_opts:
+      com.docker.network.driver.mtu: 1350

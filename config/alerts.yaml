@@ -2,12 +2,12 @@ groups:
   - name: Caption_Alerts
     rules:
     - alert: HostHighCpuLoad  # resource overuse : CPU > 80% for 1 minutes
-      expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[1m])) * 100) > 50
+      expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[1m])) * 100) > 70
       for: 1m
       labels:
         severity: warning
       annotations:
-        summary: "Host CPU Load > 50%"
+        summary: "Host CPU Load > 70%"
         description: "CPU Load is {{ $value }}%"
     
     - alert: HighInferenceLatency  # Inference latency is too high (WORKING)
@@ -47,7 +47,30 @@ groups:
         description: "Model is misbehaving with error rate {{value}}%"
 
     - alert: SevereDataDriftTopic
-      expr: sum((( (sum by (class_name) (rate(topic_model_input_classes_total[1h])) / scalar(sum(rate(topic_model_input_classes_total[1h])))) + 1e-5 )- ( model_baseline_class_dist + 1e-5 )) * ln(( (sum by (class_name) (rate(topic_model_input_classes_total[1h])) / scalar(sum(rate(topic_model_input_classes_total[1h])))) + 1e-5 )/ ( model_baseline_class_dist + 1e-5 ))) > 0.2
+      expr: (
+            (
+              sum by (class_name) (rate(topic_model_input_classes_total[5m]))
+              /
+              on() group_left()
+              sum(rate(topic_model_input_classes_total[5m]))
+            ) + 1e-5
+            -
+            (sum by (class_name) (topic_model_baseline_data_dist) + 1e-5)
+          )
+          *
+          ln(
+            (
+              (
+                sum by (class_name) (rate(topic_model_input_classes_total[5m]))
+                /
+                on() group_left()
+                sum(rate(topic_model_input_classes_total[5m]))
+              ) + 1e-5
+            )
+            /
+            on(class_name) group_left()
+            (sum by (class_name) (topic_model_baseline_data_dist) + 1e-5)
+          ) > 0.2
       for: 1h
       labels:
         severity: critical
@@ -56,7 +79,30 @@ groups:
         description: "Data distribution has drifted beyond the threshold. Re-training needed"
 
     - alert: SevereDataDriftSent
-      expr: sum((( (sum by (class_name) (rate(sent_model_input_classes_total[1h])) / scalar(sum(rate(sent_model_input_classes_total[1h])))) + 1e-5 )- ( model_baseline_class_distribution + 1e-5 )) * ln(( (sum by (class_name) (rate(topic_model_input_classes_total[1h])) / scalar(sum(rate(topic_model_input_classes_total[1h])))) + 1e-5 )/ ( sent_model_baseline_data_dist + 1e-5 ))) > 0.2
+      expr: (
+            (
+              sum by (class_name) (rate(sent_model_input_classes_total[5m]))
+              /
+              on() group_left()
+              sum(rate(sent_model_input_classes_total[5m]))
+            ) + 1e-5
+            -
+            (sum by (class_name) (sent_model_baseline_data_dist) + 1e-5)
+          )
+          *
+          ln(
+            (
+              (
+                sum by (class_name) (rate(sent_model_input_classes_total[5m]))
+                /
+                on() group_left()
+                sum(rate(sent_model_input_classes_total[5m]))
+              ) + 1e-5
+            )
+            /
+            on(class_name) group_left()
+            (sum by (class_name) (sent_model_baseline_data_dist) + 1e-5)
+          ) > 0.2
       for: 1h
       labels:
         severity: critical

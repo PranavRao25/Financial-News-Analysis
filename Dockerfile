@@ -27,9 +27,11 @@ RUN ln -s /usr/bin/python3 /usr/bin/python
 
 COPY requirements.txt .
 
+ENV PIP_HTTP_VERSION=1.1
+
 RUN --mount=type=cache,target=/root/.cache/pip \
     python -m pip install --upgrade pip && \
-    python -m pip install -r requirements.txt
+    python -m pip install --default-timeout=1000 --retries=10 -r requirements.txt
 
 COPY src ./src/
 COPY run.sh .

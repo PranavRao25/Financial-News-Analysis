@@ -5,7 +5,7 @@ FROM apache/airflow:3.1.8
 USER airflow
 
 # Bake the dependencies permanently into the image layer
-RUN pip install --no-cache-dir \
+RUN pip install --no-cache-dir --default-timeout=1000 --retries=10 \
     datasets \
     pandas \
     beautifulsoup4 \

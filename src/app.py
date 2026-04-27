@@ -116,15 +116,15 @@ def get_metrics():
 def init_topic_model():
     print("Init topic model")
     serve_port = configs["deployment"]["topic_serve"]
-    # MLFLOW_URI = f"http://topic_mlflow_serve:{serve_port}/invocations"
-    MLFLOW_URI = f"http://127.0.0.1:{serve_port}/invocations"
+    MLFLOW_URI = f"http://topic_mlflow_serve:{serve_port}/invocations"
+    # MLFLOW_URI = f"http://127.0.0.1:{serve_port}/invocations"
     return MLFLOW_URI
 
 def init_sentiment_model():
     print("Init Sentiment model")
     serve_port = configs["deployment"]["sent_serve"]
     MLFLOW_URI = f"http://sentiment_mlflow_serve:{serve_port}/invocations"
-    MLFLOW_URI = f"http://127.0.0.1:{serve_port}/invocations"
+    # MLFLOW_URI = f"http://127.0.0.1:{serve_port}/invocations"
     return MLFLOW_URI
 
 def analyse(file, ext):
@@ -200,6 +200,7 @@ def infer(txt, mode, model_name, uri, mapping):
     confidence = 0.0
 
     try:
+        prod_metrics["active_requests"].labels(session_id=session_id).inc() # type: ignore
         with prod_metrics["inference_latency"].labels(mode=mode, model_type=model_name).time(): # type: ignore
             payload = {
                 "inputs": [txt],
@@ -267,6 +268,8 @@ with open(parent / configs["sentiment"]["data"]["dist"], "r") as f:
     for row in reader:
         if len(row) == 2:
             class_name, dist_val = row[0], float(row[1])
+            remap = {"neutral": "neutral", "positive": "Bullish", "negative": "Bearish"}
+            class_name = remap[class_name]
             prod_metrics["sent_baseline_data_dist"].labels(class_name=class_name).set(dist_val) # type: ignore
 
 topic_model_name = configs["topic"]["model"]["name"]
