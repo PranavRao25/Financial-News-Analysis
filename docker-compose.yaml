@@ -113,7 +113,7 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: financial_model_server
-    command: gunicorn --bind 0.0.0.0:8501 --workers 1 src.app:app
+    command: gunicorn --bind 0.0.0.0:8501 --workers 4 src.app:app
     ports:
       - "8501:8501"
     volumes:

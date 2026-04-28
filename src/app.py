@@ -17,7 +17,7 @@ import logging
 import redis
 import utils.mail as mail
 
-print("Financial News Analysis app started")
+logging.info("Financial News Analysis app started")
 
 app = Flask(__name__)
 parent = Path(__file__).resolve().parent.parent
@@ -29,7 +29,7 @@ with open(parent / "config/config.yaml", 'r') as f:
 # Sentiment Analysis & Topic Modelling
 
 def failure_mail(model_id, e):
-    print("sending failure mail")
+    logging.info("sending failure mail")
     subject = f"Task : {model_id} inference failed"
     body = f"""
         Experiment Inference for task {model_id} failed\n
@@ -119,14 +119,14 @@ def get_metrics():
     }
 
 def init_topic_model():
-    print("Init topic model")
+    logging.info("Init topic model")
     serve_port = configs["deployment"]["topic_serve"]
     MLFLOW_URI = f"http://topic_mlflow_serve:{serve_port}/invocations"
     # MLFLOW_URI = f"http://127.0.0.1:{serve_port}/invocations"
     return MLFLOW_URI
 
 def init_sentiment_model():
-    print("Init Sentiment model")
+    logging.info("Init Sentiment model")
     serve_port = configs["deployment"]["sent_serve"]
     MLFLOW_URI = f"http://sentiment_mlflow_serve:{serve_port}/invocations"
     # MLFLOW_URI = f"http://127.0.0.1:{serve_port}/invocations"
@@ -225,7 +225,7 @@ def infer(txt, mode, model_name, uri, mapping):
                 raise Exception(f"MLFlow API Error {response.status_code}: {response.text}")
 
             results = response.json().get("predictions", response.json())[0]
-            print(results)
+            logging.info(results)
 
             logging.info("sending mail")
             success_mail(mode, results)
@@ -302,7 +302,7 @@ ALLOWED_EXTENSIONS = {"pdf", "txt", "jpeg", "jpg", "png"}
 app.config["MAX_FILE_SIZE"] = 100 * 1000 * 1000
 app.config["CORS_HEADER"] = "application/json"
 
-print("App running")
+logging.info("App running")
 
 @app.route('/', methods=["GET", "POST"]) # type: ignore
 def root():
@@ -311,7 +311,7 @@ def root():
     """
 
     if request.method == "POST":
-        print(request.files)
+        logging.info(request.files)
         if "file" not in request.files:
             return jsonify({"message": "No file uploaded"}), 400
         
@@ -326,7 +326,7 @@ def root():
             
             try:
                 output = analyse(file, ext)
-                print(output)
+                logging.info(output)
 
                 return output, 200
             except Exception as e:
@@ -379,5 +379,5 @@ def ingest():
     return jsonify({"message": "Ground Truth logged", "status": status}), 200
 
 if __name__ == "__main__":
-    print(f"Run app on port = {port}")
+    logging.info(f"Run app on port = {port}")
     app.run(debug=False, port=port, use_reloader=False)
