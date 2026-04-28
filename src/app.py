@@ -1,18 +1,14 @@
-from flask import Flask, request, render_template, jsonify, flash, redirect, url_for, Response
-from prometheus_client import start_http_server, Counter, Gauge, Histogram, Info, Summary, generate_latest, CONTENT_TYPE_LATEST
+from flask import Flask, request, render_template, jsonify, Response
+from prometheus_client import Counter, Gauge, Histogram, generate_latest, CONTENT_TYPE_LATEST
 from werkzeug.utils import secure_filename
 import os
 import requests
 import json
 from uuid import uuid4
 import requests
-import io
 import concurrent.futures
-from io import StringIO
 import psutil
 import csv
-import zipfile
-import cv2
 import pytesseract
 from PIL import Image
 import yaml
@@ -20,8 +16,6 @@ from pathlib import Path
 import logging
 import redis
 import utils.mail as mail
-
-## TODO: FIX TOPIC LENGTH ISSUE
 
 print("Financial News Analysis app started")
 
@@ -35,6 +29,7 @@ with open(parent / "config/config.yaml", 'r') as f:
 # Sentiment Analysis & Topic Modelling
 
 def failure_mail(model_id, e):
+    print("sending failure mail")
     subject = f"Task : {model_id} inference failed"
     body = f"""
         Experiment Inference for task {model_id} failed\n
@@ -42,10 +37,18 @@ def failure_mail(model_id, e):
     """
     mail.send_mail(subject, body)
 
-def init_metrics_server(port=8000):
-    print(f"Metrics server on port = {port}")
-    start_http_server(port)
-    return True
+def success_mail(model_id, results):
+    logging.info("inside mail body")
+    subject = f"Task : {model_id} inference success"
+    body = f"""
+        Experiment Inference for task {model_id} success {results}\n
+    """
+    mail.send_mail(subject, body)
+
+# def init_metrics_server(port=8000):
+#     print(f"Metrics server on port = {port}")
+#     start_http_server(port)
+#     return True
 
 def get_metrics():
     return {
@@ -118,27 +121,23 @@ def get_metrics():
 def init_topic_model():
     print("Init topic model")
     serve_port = configs["deployment"]["topic_serve"]
-    MLFLOW_URI = f"http://127.0.0.1:{serve_port}/invocations"
+    MLFLOW_URI = f"http://topic_mlflow_serve:{serve_port}/invocations"
+    # MLFLOW_URI = f"http://127.0.0.1:{serve_port}/invocations"
     return MLFLOW_URI
 
 def init_sentiment_model():
     print("Init Sentiment model")
     serve_port = configs["deployment"]["sent_serve"]
-    MLFLOW_URI = f"http://127.0.0.1:{serve_port}/invocations"
+    MLFLOW_URI = f"http://sentiment_mlflow_serve:{serve_port}/invocations"
+    # MLFLOW_URI = f"http://127.0.0.1:{serve_port}/invocations"
     return MLFLOW_URI
 
 def analyse(file, ext):
     def run_sentiment():  # thread running Sentiment inference
         try:
             results = infer(txt, "sentiment", sent_model_name, sent_uri, sent_mapping)  # {'0': {'label': "", 'confidence': int}, ...}
-            results = [
-                {"label": results[item]["label"].split('_')[1],
-                 "confidence": results[item]["score"]}
-                for item in results
-            ]
-            for item in results:  # TODO: Handle multiple inputs
-                label = str(sent_mapping[str(item["label"])])
-                conf = item["confidence"]
+            label = str(sent_mapping[str(results["label"]).split("_")[1]])
+            conf = results["score"]
             prod_metrics["sent_input_label"].labels(class_name=label).inc() # type: ignore
             return {"label": label, "confidence": conf, "model": sent_model_name, "status": "success", "error": ""}
         except Exception as e:
@@ -204,14 +203,18 @@ def infer(txt, mode, model_name, uri, mapping):
 
     label = "Unknown"
     confidence = 0.0
+    active_request_tracked = False
 
     try:
+        prod_metrics["active_requests"].labels(session_id=session_id).inc() # type: ignore
+        active_request_tracked = True
         with prod_metrics["inference_latency"].labels(mode=mode, model_type=model_name).time(): # type: ignore
             payload = {
                 "inputs": [txt],
                 "params": {
                     "truncation": True,
-                    "max_length": 512
+                    "max_length": 512,
+                    "return_token_type_ids": False
                 }
             }
             headers = {"Content-Type": "application/json"}
@@ -223,17 +226,23 @@ def infer(txt, mode, model_name, uri, mapping):
 
             results = response.json().get("predictions", response.json())[0]
             print(results)
+
+            logging.info("sending mail")
+            success_mail(mode, results)
             return results
     except Exception as e:
         error_name = type(e).__name__
         logging.error(f"Error during {mode} inference: {error_name}")
         prod_metrics["errors"].labels(mode=mode, error_types=error_name).inc() # type: ignore
         prod_metrics["model_reliability"].labels(model_name=model_name, status="error").inc() # type: ignore
+        logging.info("sending failure mail")
         failure_mail(mode, str(e))
         raise e
     finally:
         prod_metrics["model_reliability"].labels(model_name=model_name, status="success").inc() # type: ignore
-        prod_metrics["active_requests"].labels(session_id=session_id).dec() # type: ignore
+
+        if active_request_tracked:
+            prod_metrics["active_requests"].labels(session_id=session_id).dec() # type: ignore
 
     return label, confidence
 
@@ -245,9 +254,8 @@ with open(parent / configs["topic"]["data"]["mapping"], "r") as f:
 with open(parent / configs["sentiment"]["data"]["mapping"], "r") as f:
     sent_mapping = json.load(f)
 
-if os.environ.get("WERKZEUG_RUN_MAIN") == "true" or not app.debug:
-    init_metrics_server(configs["monitoring"]["port"]["model"])
-    process = psutil.Process(os.getpid())
+# if os.environ.get("WERKZEUG_RUN_MAIN") == "true" or not app.debug
+process = psutil.Process(os.getpid())
 
 redis_host = os.environ.get("REDIS_HOST", "localhost")
 prediction_cache = redis.Redis(host=redis_host, port=configs["monitoring"]["port"]["redis"], db=0, decode_responses=True)
@@ -273,6 +281,8 @@ with open(parent / configs["sentiment"]["data"]["dist"], "r") as f:
     for row in reader:
         if len(row) == 2:
             class_name, dist_val = row[0], float(row[1])
+            remap = {"neutral": "neutral", "positive": "Bullish", "negative": "Bearish"}
+            class_name = remap[class_name]
             prod_metrics["sent_baseline_data_dist"].labels(class_name=class_name).set(dist_val) # type: ignore
 
 topic_model_name = configs["topic"]["model"]["name"]

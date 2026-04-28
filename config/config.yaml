@@ -14,7 +14,7 @@ topic:
     random_state : 42
     embed_len: 128
     no_classes: 20
-  model:
+  model:  
     device: "cuda"
     name: "distilbert/distilbert-base-uncased"
     path: "models/topic/v4"

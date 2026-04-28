@@ -131,8 +131,8 @@ def train(train_dataset_path, valid_dataset_path, model_path, model_id,
     mlflow.log_params(hyperparams)
 
     try:
-        # tokenizer = AutoTokenizer.from_pretrained(model_id, use_fast=True)
-        tokenizer = BertTokenizer.from_pretrained(model_id)
+        tokenizer = AutoTokenizer.from_pretrained(model_id, use_fast=True)
+        # tokenizer = BertTokenizer.from_pretrained(model_id)
         # tokenizer = RobertaTokenizer.from_pretrained(model_id)
         data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
         model = AutoModelForSequenceClassification.from_pretrained(
@@ -191,7 +191,7 @@ def train(train_dataset_path, valid_dataset_path, model_path, model_id,
             transformers_model={"model": model, "tokenizer": tokenizer},
             name="model",
             artifacts_path="model",
-            model_config=model.config.to_dict(),
+            # model_config=model.config.to_dict(),
             task="text-classification",
             registered_model_name=f"Financial_Sentiment_{model_name}"
         )
@@ -248,14 +248,6 @@ if __name__ == "__main__":
     with open(parent / "src/sentiment/sent_models.json", "r") as f:
         models = json.load(f)
 
-    # experiment = mlflow.get_experiment_by_name("Sentiment_Analysis_Model_Comparisons")
-    # if experiment:
-    #     print("Experiment exists")
-    #     exp_id = experiment.experiment_id
-    # else:
-    #     print("Creating new Experiment")
-    #     exp_id = mlflow.create_experiment("Sentiment_Analysis_Model_Comparisons")
-
     exp_name = "Sentiment_Analysis_Model_Comparisons"
 
     mlflow.end_run()
@@ -265,8 +257,6 @@ if __name__ == "__main__":
         active_experiment = mlflow.get_experiment(mlflow.active_run().info.experiment_id) # type: ignore
         exp_name = active_experiment.name
         try:
-            # exp = mlflow.set_experiment(experiment_id=exp_id)
-
             # for model in models:
             #     model_id, hyperparams = model["name"], model["hyperparams"]
             #     train(train_dataset_path, valid_dataset_path, model_path,
