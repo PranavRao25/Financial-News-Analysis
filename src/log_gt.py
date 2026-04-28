@@ -108,6 +108,17 @@ def log_topic(row):
         print(f"Worker thread crashed on row: {row}")
 
 if __name__ == "__main__":
+    print("Loading Sample Dataset...")
+    df = pd.read_csv("inputs/sample.csv")
+    print(f"Spawning ingestion threads for {len(df)} records...")
+    start_time = time.time()
+    
+    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+        futures = [executor.submit(log_ground_truth, row) for _, row in df.iterrows()]
+        concurrent.futures.wait(futures)
+   
+    print(f"Ingestion Matrix complete in {time.time() - start_time:.2f} seconds.")
+
     print("Loading Ground Truth Dataset...")
     df = pd.read_csv("inputs/ground_truth.csv")
     print(f"Spawning ingestion threads for {len(df)} records...")

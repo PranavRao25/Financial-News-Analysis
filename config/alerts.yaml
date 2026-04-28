@@ -1,13 +1,13 @@
 groups:
   - name: Caption_Alerts
     rules:
-    - alert: HostHighCpuLoad  # resource overuse : CPU > 80% for 1 minutes
-      expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[1m])) * 100) > 70
+    - alert: HostHighCpuLoad  # resource overuse : CPU > 50% for 1 minutes
+      expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[1m])) * 100) > 50
       for: 1m
       labels:
         severity: warning
       annotations:
-        summary: "Host CPU Load > 70%"
+        summary: "Host CPU Load > 50%"
         description: "CPU Load is {{ $value }}%"
     
     - alert: HighInferenceLatency  # Inference latency is too high (WORKING)
@@ -71,7 +71,7 @@ groups:
             on(class_name) group_left()
             (sum by (class_name) (topic_model_baseline_data_dist) + 1e-5)
           ) > 0.2
-      for: 1h
+      for: 5m
       labels:
         severity: critical
       annotations:
@@ -103,7 +103,7 @@ groups:
             on(class_name) group_left()
             (sum by (class_name) (sent_model_baseline_data_dist) + 1e-5)
           ) > 0.2
-      for: 1h
+      for: 5m
       labels:
         severity: critical
       annotations:

@@ -1,18 +1,14 @@
-from flask import Flask, request, render_template, jsonify, flash, redirect, url_for, Response
-from prometheus_client import start_http_server, Counter, Gauge, Histogram, Info, Summary, generate_latest, CONTENT_TYPE_LATEST
+from flask import Flask, request, render_template, jsonify, Response
+from prometheus_client import Counter, Gauge, Histogram, generate_latest, CONTENT_TYPE_LATEST
 from werkzeug.utils import secure_filename
 import os
 import requests
 import json
 from uuid import uuid4
 import requests
-import io
 import concurrent.futures
-from io import StringIO
 import psutil
 import csv
-import zipfile
-import cv2
 import pytesseract
 from PIL import Image
 import yaml
@@ -33,10 +29,19 @@ with open(parent / "config/config.yaml", 'r') as f:
 # Sentiment Analysis & Topic Modelling
 
 def failure_mail(model_id, e):
+    print("sending failure mail")
     subject = f"Task : {model_id} inference failed"
     body = f"""
         Experiment Inference for task {model_id} failed\n
         Exception: {e}
+    """
+    mail.send_mail(subject, body)
+
+def success_mail(model_id, results):
+    logging.info("inside mail body")
+    subject = f"Task : {model_id} inference success"
+    body = f"""
+        Experiment Inference for task {model_id} success {results}\n
     """
     mail.send_mail(subject, body)
 
@@ -198,9 +203,11 @@ def infer(txt, mode, model_name, uri, mapping):
 
     label = "Unknown"
     confidence = 0.0
+    active_request_tracked = False
 
     try:
         prod_metrics["active_requests"].labels(session_id=session_id).inc() # type: ignore
+        active_request_tracked = True
         with prod_metrics["inference_latency"].labels(mode=mode, model_type=model_name).time(): # type: ignore
             payload = {
                 "inputs": [txt],
@@ -219,17 +226,23 @@ def infer(txt, mode, model_name, uri, mapping):
 
             results = response.json().get("predictions", response.json())[0]
             print(results)
+
+            logging.info("sending mail")
+            success_mail(mode, results)
             return results
     except Exception as e:
         error_name = type(e).__name__
         logging.error(f"Error during {mode} inference: {error_name}")
         prod_metrics["errors"].labels(mode=mode, error_types=error_name).inc() # type: ignore
         prod_metrics["model_reliability"].labels(model_name=model_name, status="error").inc() # type: ignore
+        logging.info("sending failure mail")
         failure_mail(mode, str(e))
         raise e
     finally:
         prod_metrics["model_reliability"].labels(model_name=model_name, status="success").inc() # type: ignore
-        prod_metrics["active_requests"].labels(session_id=session_id).dec() # type: ignore
+
+        if active_request_tracked:
+            prod_metrics["active_requests"].labels(session_id=session_id).dec() # type: ignore
 
     return label, confidence
 

@@ -18,6 +18,8 @@ It uses distillBERT finetuned on the corresponding tasks.
 6. 5001 / 5003 - MLFlow Serving endpoints
 7. 9090 - Prometheus
 
+---
+
 ## User Manual
 
 Spin up an instance by running:
@@ -36,6 +38,7 @@ Curl Request:
 ```
 curl -X POST -F "file=@/path/to/your/test_document.txt" http://localhost:8501/
 ```
+
 2. Ingest ground truth -
 ```
 curl -X POST http://localhost:8501/ingest -H "Content-Type: application/json" \
@@ -52,10 +55,22 @@ curl -X POST http://localhost:8501/ingest -H "Content-Type: application/json" \
 |Sentiment Analysis | takala/financial_phrasebank | distillbert-base | F1 / Accuracy |
 | Topic Classification | zeroshot/twitter-financial-news-topic | distillbert-base | F1 / Accuracy |
 
+---
+
+## Documentation for Reference
+
+* [API Reference](docs/api_reference.md) : Description of all REST APIs and functions used (Low Level Document)
+* [HLD](docs/architecture.jpeg) : High level Diagram
+* [Report](docs/Project_Report.pdf): Comprehensive Project Report
+* [Test Plan](docs/test_plan.md) : Test Plan
+* [Output Dir](output/) : Output Directory
+* [Input Dir](inputs/) : Inference input data
+
+---
+
 Directory Structure:
 ```
 .
-├── AI Application Evaluation Guideline.pdf
 ├── airflow.sh
 ├── alertmanager-0.31.1.linux-amd64
 │   ├── alertmanager
@@ -125,6 +140,10 @@ Directory Structure:
 ├── docker-compose.yaml
 ├── Dockerfile
 ├── Dockerfile.airflow
+├── docs
+│   ├── AI Application Evaluation Guideline.pdf
+│   ├── api_reference.md
+│   ├── architecture.jpeg
 ├── grafana
 │   ├── dashboards
 │   │   └── dashboard.json
